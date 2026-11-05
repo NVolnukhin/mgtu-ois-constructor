@@ -67,7 +67,7 @@ function HomeLayout() {
         <HomeScreen />
       </main>
       <footer className="footer">
-        <p>Сервера нет: базы и ответы остаются в этом браузере.</p>
+        <p>Автор конструктора: Волнухин Никита</p>
         <a className="footer__link" href="https://github.com/NVolnukhin/mgtu-ois-constructor" target="_blank" rel="noreferrer">
           Исходный код
         </a>
