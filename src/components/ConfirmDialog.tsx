@@ -58,6 +58,16 @@ function ConfirmDialog({ request, onAnswer }: { request: ConfirmRequest; onAnswe
     cancelRef.current?.focus();
   }, []);
 
+  // Человек ушёл с экрана кнопкой «Назад»: подтверждать удаление уже невидимого не нужно.
+  useEffect(() => {
+    const cancel = () => {
+      dialogRef.current?.close();
+      onAnswer(false);
+    };
+    window.addEventListener('hashchange', cancel);
+    return () => window.removeEventListener('hashchange', cancel);
+  }, [onAnswer]);
+
   // Отвечаем сразу, не дожидаясь события close: браузер присылает его с задержкой, и следующий диалог,
   // открытый за это время, не показался бы.
   function answer(yes: boolean) {

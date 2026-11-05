@@ -9,6 +9,9 @@
 html {
   -webkit-text-size-adjust: 100%;
   text-size-adjust: 100%;
+  /* Закреплённые шапка и панель кнопок не должны закрывать то, куда браузер прокрутил фокус. */
+  scroll-padding-top: calc(var(--sticky-offset) + var(--space-sm));
+  scroll-padding-bottom: var(--space-xxl);
 }
 
 body {
@@ -18,6 +21,8 @@ body {
   font-family: var(--font-sans);
   font-size: 16px;
   line-height: 1.5;
+  /* Длинное слово или ссылка из базы переносятся, а не расширяют страницу. Свойство наследуется, поэтому работает на всех экранах. */
+  overflow-wrap: anywhere;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -60,6 +65,21 @@ a {
 :focus-visible {
   outline: 2px solid var(--color-ink);
   outline-offset: 2px;
+}
+
+/*
+ * На телефоне очень длинное слово в заголовке лучше перенести по слогам, чем обрубить. Обычные слова переносить незачем,
+ * поэтому там, где браузер не умеет ограничивать длину слова, перенос по слогам не включаем.
+ */
+@media (max-width: 743px) {
+  @supports (hyphenate-limit-chars: 16 8 4) {
+    h1,
+    h2,
+    h3 {
+      hyphens: auto;
+      hyphenate-limit-chars: 16 8 4;
+    }
+  }
 }
 
 /* Заголовки получают фокус программно — для экранных дикторов, рамка им не нужна. */
@@ -150,6 +170,11 @@ a {
   cursor: pointer;
 }
 
+.text-button:disabled {
+  color: var(--color-muted);
+  cursor: not-allowed;
+}
+
 .text-button--inline {
   font-size: inherit;
   font-weight: inherit;
@@ -198,7 +223,7 @@ a {
 }
 
 .btn--primary {
-  background: var(--color-primary);
+  background: var(--color-primary-text);
   color: var(--color-on-primary);
 }
 
@@ -209,6 +234,7 @@ a {
 
 .btn--primary:disabled {
   background: var(--color-primary-disabled);
+  color: var(--color-on-primary-disabled);
   cursor: not-allowed;
 }
 
@@ -232,6 +258,12 @@ a {
 
 .btn--ghost:hover {
   background: var(--color-surface-soft);
+}
+
+.btn--ghost[aria-disabled='true'] {
+  background: transparent;
+  color: var(--color-muted);
+  cursor: not-allowed;
 }
 
 .badges {
@@ -655,6 +687,11 @@ a {
   font-weight: 500;
 }
 
+.progress__count {
+  flex: none;
+  white-space: nowrap;
+}
+
 .progress__blocks {
   display: flex;
   gap: var(--space-xs);
@@ -746,8 +783,9 @@ a {
 /* Настоящий input остаётся доступным с клавиатуры и для экранных дикторов, но не виден. */
 .option__input {
   position: absolute;
-  width: 1px;
-  height: 1px;
+  inset: 0;
+  width: 100%;
+  height: 100%;
   margin: 0;
   opacity: 0;
   pointer-events: none;
@@ -814,7 +852,13 @@ a {
   line-height: 1.4;
 }
 
-/* На телефоне кнопки прилипают к низу экрана, чтобы «Далее» всегда было под пальцем. */
+/* На телефоне кнопки прилипают к низу экрана, чтобы «Далее» всегда было под пальцем. Вариант, выбранный стрелками, не должен оказаться под ними. */
+@media (max-width: 743px) {
+  html:has(.navbar) {
+    scroll-padding-bottom: calc(var(--space-section) + var(--space-xl));
+  }
+}
+
 .navbar {
   position: sticky;
   bottom: 0;
@@ -946,7 +990,7 @@ a {
 }
 
 .ranking__item:first-child .ranking__rank {
-  background: var(--color-primary);
+  background: var(--color-primary-text);
   color: var(--color-on-primary);
 }
 
@@ -1499,7 +1543,7 @@ a {
 }
 
 .top-cards li:first-child .top-card__rank {
-  background: var(--color-primary);
+  background: var(--color-primary-text);
 }
 
 .top-card__score {
@@ -1571,14 +1615,6 @@ a {
   color: var(--color-body);
 }
 
-.page__lead code,
-.kb-table code {
-  padding: 1px 5px;
-  border-radius: var(--radius-xs);
-  background: var(--color-surface-strong);
-  font-size: 0.9em;
-}
-
 .tabs {
   display: flex;
   gap: var(--space-sm);
@@ -1628,6 +1664,8 @@ a {
   border-collapse: collapse;
   font-size: 13px;
   line-height: 1.35;
+  /* Таблица прокручивается внутри себя, поэтому колонка может быть шире слова, а не сжиматься до одной буквы. */
+  overflow-wrap: break-word;
 }
 
 .kb-table th,
@@ -1792,7 +1830,7 @@ a {
 .rule__keyword {
   display: inline-block;
   min-width: 48px;
-  color: var(--color-primary);
+  color: var(--color-primary-text);
   font-weight: 700;
 }
 
@@ -1816,7 +1854,7 @@ a {
 }
 
 .rules-section {
-  scroll-margin-top: calc(var(--topbar-height) + var(--space-base));
+  scroll-margin-top: calc(var(--sticky-offset) + var(--space-base));
 }
 
 .rule-groups {
@@ -1970,17 +2008,25 @@ a {
 
 /* ---------- Главный экран ---------- */
 
-/* Хранилище переполнено: видно на любом экране, поверх шапки при прокрутке. */
+/* Не удалось сохранить: видно на любом экране и при прокрутке. Закреплено под шапкой, поэтому навигация остаётся доступной. */
+:root:has(.banner) {
+  --sticky-offset: calc(var(--topbar-height) + 64px);
+}
+
 .banner {
   position: sticky;
-  top: 0;
-  z-index: 20;
+  top: var(--topbar-height);
+  z-index: 9;
   padding: var(--space-md) var(--gutter);
   background: var(--color-error);
   color: var(--color-on-primary);
   font-size: 14px;
   font-weight: 500;
   line-height: 1.4;
+}
+
+.banner a {
+  color: inherit;
 }
 
 .home__title {
@@ -2268,7 +2314,7 @@ a {
 
   .editor__nav {
     position: sticky;
-    top: calc(var(--topbar-height) + var(--space-base));
+    top: calc(var(--sticky-offset) + var(--space-base));
     flex-direction: column;
     overflow: visible;
   }
@@ -2491,7 +2537,7 @@ a {
   padding: var(--space-base) 20px;
   border-radius: var(--radius-md);
   box-shadow: inset 0 0 0 1px var(--color-hairline);
-  scroll-margin-top: calc(var(--topbar-height) + var(--space-base));
+  scroll-margin-top: calc(var(--sticky-offset) + var(--space-base));
 }
 
 .editor-card__head {
@@ -2531,16 +2577,17 @@ a {
   transition: background-color 0.15s ease;
 }
 
-.icon-btn:hover:not(:disabled) {
+.icon-btn:hover:not(:disabled, [aria-disabled='true']) {
   background: var(--color-hairline);
 }
 
-.icon-btn:disabled {
+.icon-btn:disabled,
+.icon-btn[aria-disabled='true'] {
   opacity: 0.35;
   cursor: not-allowed;
 }
 
-.icon-btn--danger:hover:not(:disabled) {
+.icon-btn--danger:hover:not(:disabled, [aria-disabled='true']) {
   background: #fdecea;
   color: var(--color-error);
 }
@@ -2678,7 +2725,7 @@ a {
   padding: 20px;
   border-radius: var(--radius-md);
   background: var(--color-surface-soft);
-  scroll-margin-top: calc(var(--topbar-height) + var(--space-base));
+  scroll-margin-top: calc(var(--sticky-offset) + var(--space-base));
 }
 
 .editor-block > .btn {
@@ -2704,7 +2751,7 @@ a {
   border-radius: var(--radius-md);
   background: var(--color-canvas);
   box-shadow: inset 0 0 0 1px var(--color-hairline);
-  scroll-margin-top: calc(var(--topbar-height) + var(--space-base));
+  scroll-margin-top: calc(var(--sticky-offset) + var(--space-base));
 }
 
 .editor-question--open {
@@ -2779,6 +2826,7 @@ a {
 .rule-form__selects {
   display: grid;
   grid-column: 2;
+  grid-template-columns: minmax(0, 1fr);
   align-items: center;
   gap: var(--space-xs) var(--space-sm);
 }
@@ -2802,7 +2850,11 @@ a {
   }
 }
 
-/* Список проблем */
+/* Список проблем. В редакторе он стоит под формой: сверху он менял бы высоту при вводе, и форма прыгала бы под курсором. */
+
+.editor__content .issues {
+  margin-top: var(--space-lg);
+}
 
 .issues {
   display: grid;
@@ -3167,5 +3219,283 @@ html:has(.confirm[open]) {
   to {
     opacity: 0;
     transform: translateY(8px);
+  }
+}
+
+/* ---------- Цели для пальца: на телефоне и других сенсорных экранах не меньше 44 пикселей ---------- */
+
+@media (max-width: 743px), (pointer: coarse) {
+  .btn--small,
+  .tab,
+  .editor__link,
+  .editor-question__toggle {
+    min-height: 44px;
+  }
+
+  .topnav__menu {
+    width: 44px;
+    height: 44px;
+  }
+
+  .topbar__base {
+    padding-block: 14px;
+  }
+
+  /* Кнопки-ссылки в ряду и отдельной строкой. */
+  .text-button:not(.text-button--inline) {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+  }
+
+  /* Ссылки внутри абзаца: строку не раздвигаем, площадь нажатия расширяем. */
+  .text-button--inline,
+  .note a,
+  .page__lead a,
+  .editor__status a,
+  .alert a,
+  .banner a {
+    padding-block: 14px;
+  }
+
+  .footer__link {
+    padding-block: 13px;
+  }
+
+  .issue__text--link {
+    padding-block: var(--space-sm);
+  }
+
+  .row-actions {
+    gap: var(--space-xs);
+  }
+
+  .icon-btn {
+    width: 44px;
+    height: 44px;
+  }
+
+  .rule-form__line {
+    grid-template-columns: 48px minmax(0, 1fr) 44px;
+  }
+
+  .rule-form__add {
+    padding-left: 0;
+  }
+
+  /* Название вопроса занимает всю строку, а кнопки стоят под ним: рядом с ними ему осталось бы слишком мало места. */
+  .editor-question__head {
+    flex-wrap: wrap;
+  }
+
+  .editor-question__toggle {
+    flex-basis: 100%;
+  }
+
+  .editor-details > summary {
+    padding-block: var(--space-md);
+  }
+
+  .checkbox,
+  .checkbox--small {
+    align-items: center;
+    min-height: 44px;
+  }
+
+  .checkbox input,
+  .checkbox--small input {
+    width: 22px;
+    height: 22px;
+    margin: 0;
+  }
+
+  /* Меньше 16 пикселей: Safari на телефоне увеличивает страницу при вводе. */
+  .field__input,
+  .cell-input,
+  .scale-select {
+    font-size: 16px;
+  }
+
+  .cell-input,
+  .scale-select {
+    min-height: 44px;
+  }
+
+  .scale-select {
+    width: 48px;
+    min-width: 48px;
+    height: 44px;
+  }
+}
+
+/* ---------- Телефон лёжа: высоты мало, поэтому всё плотнее, а фото и текст стоят рядом ---------- */
+
+@media (max-height: 500px) and (min-width: 560px) {
+  :root {
+    --topbar-height: 48px;
+    /* В этом положении экрана вырез телефона оказывается сбоку. */
+    --gutter: max(16px, env(safe-area-inset-left), env(safe-area-inset-right));
+  }
+
+  .main,
+  .main--wide {
+    padding-top: var(--space-md);
+  }
+
+  .brand {
+    padding-block: var(--space-xs);
+  }
+
+  .topbar__base {
+    padding-block: var(--space-sm);
+  }
+
+  .topnav__menu {
+    width: 40px;
+    height: 40px;
+  }
+
+  /* Вопрос: слева фото и рейтинг, справа вопрос, а кнопки прилипают к низу правой колонки. */
+  .question {
+    grid-template-rows: none;
+    grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
+    grid-template-areas: none;
+    gap: 0 var(--space-lg);
+    align-items: start;
+  }
+
+  .question__aside {
+    display: grid;
+    grid-area: 1 / 1;
+    gap: var(--space-base);
+  }
+
+  .question__photo {
+    order: 0;
+    aspect-ratio: 16 / 9;
+  }
+
+  .question__content {
+    grid-area: 1 / 2;
+    padding-bottom: 72px;
+  }
+
+  .question .navbar {
+    position: sticky;
+    bottom: 0;
+    grid-area: 1 / 2;
+    align-self: end;
+    justify-content: space-between;
+    margin: 0;
+    padding: var(--space-sm) 0 calc(var(--space-sm) + env(safe-area-inset-bottom));
+    border-top: 1px solid var(--color-hairline);
+  }
+
+  .navbar .btn {
+    min-height: 44px;
+  }
+
+  .navbar__next {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .question__title {
+    font-size: 18px;
+    letter-spacing: -0.18px;
+  }
+
+  .question__content .badges,
+  .question__legend {
+    margin-top: var(--space-sm);
+  }
+
+  .options {
+    gap: var(--space-sm);
+    margin-top: var(--space-md);
+  }
+
+  .option {
+    min-height: 44px;
+    padding: var(--space-sm) var(--space-md);
+  }
+
+  .live {
+    padding: var(--space-md);
+  }
+
+  /* Стартовый экран */
+  .start__hero:not(.start__hero--solo) {
+    grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+    gap: var(--space-lg);
+    align-items: start;
+  }
+
+  .start__title {
+    margin-top: var(--space-xs);
+    font-size: 26px;
+    letter-spacing: -0.4px;
+  }
+
+  .start__lead {
+    margin-top: var(--space-sm);
+    font-size: 14px;
+    line-height: 1.4;
+  }
+
+  .facts {
+    gap: var(--space-xs);
+    margin-top: var(--space-sm);
+  }
+
+  .facts li {
+    padding: 2px var(--space-sm);
+    font-size: 12px;
+  }
+
+  .start__intro .actions {
+    gap: var(--space-sm);
+    margin-top: var(--space-md);
+  }
+
+  .start__intro .btn {
+    min-height: 44px;
+    padding: 0 var(--space-base);
+    font-size: 15px;
+  }
+
+  /* Результат: итог рядом с фото, а не под ним. */
+  .result__hero:not(.result__hero--solo) {
+    grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+    gap: var(--space-lg);
+    align-items: start;
+  }
+
+  .result__photo {
+    order: 0;
+    aspect-ratio: 3 / 2;
+  }
+
+  .result__title {
+    margin-top: var(--space-xs);
+    font-size: 24px;
+    letter-spacing: -0.4px;
+  }
+
+  .result__tagline {
+    margin-top: var(--space-xs);
+    font-size: 15px;
+  }
+
+  .score {
+    margin-top: var(--space-sm);
+  }
+
+  .score__value {
+    font-size: 40px;
+  }
+
+  .score__unit {
+    font-size: 20px;
   }
 }

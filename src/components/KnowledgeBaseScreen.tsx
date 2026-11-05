@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
+import type { KeyboardEvent } from 'react';
 import { resolveCondition, useBase } from '../base.ts';
-import { allQuestions, attributeLabel, level } from '../engine/scoring.ts';
+import { allQuestions, attributeLabel, level, ruleTitle } from '../engine/scoring.ts';
 import { minAskedQuestions } from '../engine/validate.ts';
 import type { Weights } from '../engine/types.ts';
-import { plural } from '../plural.ts';
+import { plural, pluralWord } from '../plural.ts';
 import { basePath } from '../router.ts';
 
 type Tab = 'objects' | 'attributes' | 'groups' | 'parameters' | 'rules';
@@ -30,6 +31,18 @@ export function KnowledgeBaseScreen({ returnPath }: KnowledgeBaseScreenProps) {
     titleRef.current?.focus({ preventScroll: true });
   }, []);
 
+  /** Вкладки переключаются стрелками, как и положено элементу с ролью tablist. */
+  function switchByKey(event: KeyboardEvent<HTMLDivElement>) {
+    const index = tabs.findIndex((item) => item.id === tab);
+    const positions: Record<string, number> = { ArrowRight: index + 1, ArrowLeft: index - 1, Home: 0, End: tabs.length - 1 };
+    const position = positions[event.key];
+    if (position === undefined) return;
+    event.preventDefault();
+    const next = tabs[(position + tabs.length) % tabs.length];
+    setTab(next.id);
+    document.getElementById(`tab-${next.id}`)?.focus();
+  }
+
   return (
     <article className="kb">
       <h1 ref={titleRef} tabIndex={-1} className="page__title">
@@ -41,7 +54,7 @@ export function KnowledgeBaseScreen({ returnPath }: KnowledgeBaseScreenProps) {
         {builtIn ? 'Это встроенный пример: посмотреть можно всё, а менять — только копию.' : <a href={basePath(id, 'edit')}>Изменить в редакторе</a>}
       </p>
 
-      <div className="tabs" role="tablist" aria-label="Разделы базы знаний">
+      <div className="tabs" role="tablist" aria-label="Разделы базы знаний" onKeyDown={switchByKey}>
         {tabs.map((item) => (
           <button
             key={item.id}
@@ -50,6 +63,7 @@ export function KnowledgeBaseScreen({ returnPath }: KnowledgeBaseScreenProps) {
             id={`tab-${item.id}`}
             aria-selected={tab === item.id}
             aria-controls={`panel-${item.id}`}
+            tabIndex={tab === item.id ? 0 : -1}
             className={tab === item.id ? 'tab tab--active' : 'tab'}
             onClick={() => setTab(item.id)}
           >
@@ -149,9 +163,6 @@ function AttributesTab() {
               <tr key={attribute.id}>
                 <th scope="row" className="kb-table__name">
                   {attribute.title}
-                  <span className="kb-table__sub">
-                    <code>{attribute.id}</code>
-                  </span>
                 </th>
                 <td>{attribute.importance}</td>
                 {base.groups.length > 0 && <td>{base.groups.find((group) => group.attribute === attribute.id)?.title ?? '—'}</td>}
@@ -221,7 +232,7 @@ function ParametersTab() {
                 <span className="badge">{question.type === 'single' ? 'Один ответ' : 'Несколько ответов'}</span>
                 {question.situational && <span className="badge badge--outline">Ситуационная задача</span>}
                 {rules.length > 0 && (
-                  <span className="badge badge--outline">Выводится правилом {rules.map((r) => r.title).join(', ')}</span>
+                  <span className="badge badge--outline">Выводится правилом {rules.map(ruleTitle).join(', ')}</span>
                 )}
               </p>
               <p className="params__text">{question.text}</p>
@@ -306,8 +317,9 @@ function RulesTab() {
         <h2 className="section__title">Правила «параметр + атрибут» ({attributeRules.length})</h2>
         <p className="section__lead">
           ЕСЛИ параметр получил значение, ТО атрибутам даётся «преимущество». Каждый вариант ответа с весами — одно правило. Заключения
-          сработавших правил складываются в профиль предпочтений, по которому ранжируются объекты. Ещё{' '}
-          {plural(silent, ['вариант', 'варианта', 'вариантов'])} без весов правил не дают.
+          сработавших правил складываются в профиль предпочтений, по которому ранжируются объекты.
+          {silent > 0 &&
+            ` Ещё ${plural(silent, ['вариант', 'варианта', 'вариантов'])} без весов ${pluralWord(silent, ['правила не даёт', 'правил не дают', 'правил не дают'])}.`}
         </p>
         <ol className="rule-groups">
           {groups.map(({ question, index, rules }) => (
@@ -346,11 +358,11 @@ function RulesTab() {
             const target = resolveCondition(compiled, rule.then);
             return (
               <li key={rule.id} className="rule">
-                <span className="rule__title">{rule.title}</span>
+                <span className="rule__title">{ruleTitle(rule)}</span>
                 {rule.if.map((condition, index) => {
                   const source = resolveCondition(compiled, condition);
                   return (
-                    <p key={`${condition.question}/${condition.option}`} className="rule__line">
+                    <p key={index} className="rule__line">
                       <span className="rule__keyword">{index === 0 ? 'ЕСЛИ' : 'И'}</span> «{source.parameter}» = «{source.optionText}»
                     </p>
                   );

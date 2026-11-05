@@ -35,6 +35,11 @@ export function attributeLabel(attribute: Attribute): string {
   return attribute.short || attribute.title;
 }
 
+/** Обозначение правила для текстов: в чужом файле его может не быть. */
+export function ruleTitle(rule: Rule): string {
+  return rule.title.trim() || 'без обозначения';
+}
+
 export function allQuestions(base: KnowledgeBase): Question[] {
   return base.blocks.flatMap((block) => block.questions);
 }
@@ -134,6 +139,31 @@ export function askedQuestions(base: KnowledgeBase, answers: Answers): Question[
 export function isComplete(base: KnowledgeBase, answers: Answers): boolean {
   const { answers: effective } = infer(base, answers);
   return allQuestions(base).every((question) => selectedOptions(question, effective).length > 0);
+}
+
+/** Ближайший вопрос в направлении direction, который задаётся пользователю (не выведен правилом). */
+export function nearestAsked(base: KnowledgeBase, from: number, direction: 1 | -1, answers: Answers): number | null {
+  const questions = allQuestions(base);
+  const { inferred } = infer(base, answers);
+  for (let i = from; i >= 0 && i < questions.length; i += direction) {
+    if (!inferred.has(questions[i].id)) return i;
+  }
+  return null;
+}
+
+/** Первый задаваемый вопрос без ответа. Он может оказаться позади текущего, если базу изменили после начала теста. */
+export function firstUnanswered(base: KnowledgeBase, answers: Answers): number | null {
+  const { answers: effective, inferred } = infer(base, answers);
+  const index = allQuestions(base).findIndex((question) => !inferred.has(question.id) && selectedOptions(question, effective).length === 0);
+  return index >= 0 ? index : null;
+}
+
+/** С какого вопроса продолжить тест: с первого без ответа, если он позади, иначе с ближайшего задаваемого. */
+export function resumeStep(base: KnowledgeBase, answers: Answers, step: number): number {
+  const from = Math.min(Math.max(0, step), Math.max(0, allQuestions(base).length - 1));
+  const missing = firstUnanswered(base, answers);
+  if (missing !== null && missing < from) return missing;
+  return nearestAsked(base, from, 1, answers) ?? nearestAsked(base, from, -1, answers) ?? 0;
 }
 
 // ---------- 2. Правила «параметр + атрибут»: профиль предпочтений ----------
@@ -304,7 +334,7 @@ export interface GroupScore {
   group: Group;
   points: number;
   max: number;
-  /** Доля от максимума в процентах, без округления. */
+  /** Доля от максимума в процентах, без округления. Отрицательные веса могут увести сумму в минус, но доля ниже нуля не опускается. */
   percent: number;
   /** Баллы из общих блоков — решают при равенстве процентов. */
   generalPoints: number;
@@ -357,7 +387,8 @@ function groupVerdict(base: KnowledgeBase, effective: Answers, profile: Profile)
   const general = buildProfile(base, effective, generalQuestions).points;
 
   // Больший процент выигрывает; при равенстве — больше баллов в общих блоках (там человек
-  // сам выбирает между группами); дальше — порядок групп в базе знаний (сортировка стабильная).
+  // сам выбирает между группами); потом среди ушедших в минус тот, кто ушёл меньше;
+  // дальше — порядок групп в базе знаний (сортировка стабильная).
   const ranking = base.groups
     .map((group) => {
       const points = profile.points[group.attribute] ?? 0;
@@ -366,11 +397,11 @@ function groupVerdict(base: KnowledgeBase, effective: Answers, profile: Profile)
         group,
         points,
         max: groupMax,
-        percent: groupMax > 0 ? (points / groupMax) * 100 : 0,
+        percent: groupMax > 0 ? Math.max(0, points / groupMax) * 100 : 0,
         generalPoints: general[group.attribute] ?? 0,
       };
     })
-    .sort((a, b) => b.percent - a.percent || b.generalPoints - a.generalPoints);
+    .sort((a, b) => b.percent - a.percent || b.generalPoints - a.generalPoints || Math.min(b.points, 0) - Math.min(a.points, 0));
 
   const [winner, runnerUp] = ranking;
   return {

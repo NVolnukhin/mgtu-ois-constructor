@@ -1,18 +1,19 @@
 import { useState } from 'react';
 import { useBase } from '../base.ts';
 import { useConfirm } from '../components/ConfirmDialog.tsx';
-import { allQuestions, attributeLabel, weight } from '../engine/scoring.ts';
+import { MAX_TEXT_LENGTH } from '../engine/parse.ts';
+import { allQuestions, attributeLabel, ruleTitle, weight } from '../engine/scoring.ts';
 import type { Block, Group, Option, Question, Rule } from '../engine/types.ts';
 import { WEIGHT_RANGE } from '../engine/validate.ts';
 import { plural } from '../plural.ts';
 import type { UpdateBase } from './EditorScreen.tsx';
 import { CheckboxField, ImageField, IssueList, RowActions, ScaleSelect, SectionHead, SelectField, TextField } from './fields.tsx';
-import { addBlock, addQuestion, moveItem, moveQuestion, newOption, removeBlock, removeOption, removeQuestion, rulesUsing, setPhrase, setQuestionType, setWeight } from './ops.ts';
+import { addBlock, addQuestion, moveItem, moveQuestion, newOption, profilesAnswering, profilesPhrase, removeBlock, removeOption, removeQuestion, rulesUsing, setPhrase, setQuestionType, setWeight, singleAnswerWarning } from './ops.ts';
 
 /** Что пропадёт вместе с вопросом или вариантом: правила, которые на него ссылаются. */
 function rulesLost(rules: Rule[]): string {
   if (rules.length === 0) return '';
-  const titles = rules.map((rule) => rule.title).join(', ');
+  const titles = rules.map(ruleTitle).join(', ');
   return rules.length === 1 ? `Вместе с ним пропадёт правило ${titles}.` : `Вместе с ним пропадут правила ${titles}.`;
 }
 
@@ -38,9 +39,16 @@ export function QuestionsSection({ update }: { update: UpdateBase }) {
 
   async function removeWholeBlock(block: Block, index: number) {
     const lost = plural(block.questions.length, ['вопрос', 'вопроса', 'вопросов']);
+    const profiles = base.testProfiles.filter((profile) => block.questions.some((question) => profile.answers[question.id] !== undefined));
     const yes = await confirm({
       title: `Удалить блок ${index + 1}${block.title ? ` «${block.title}»` : ''}?`,
-      message: block.questions.length > 0 ? `Вместе с ним пропадут ${lost} и правила, которые на них ссылаются.` : undefined,
+      message:
+        [
+          block.questions.length > 0 && `Вместе с ним пропадут ${lost} и правила, которые на них ссылаются.`,
+          profiles.length > 0 && `Ответы на эти вопросы пропадут из ${profilesPhrase(profiles)}.`,
+        ]
+          .filter(Boolean)
+          .join(' ') || undefined,
       action: 'Удалить',
     });
     if (yes) update((draft) => removeBlock(draft, block.id));
@@ -56,7 +64,6 @@ export function QuestionsSection({ update }: { update: UpdateBase }) {
         Каждый вопрос — параметр рабочей базы данных. Вариант ответа и его веса — это правило «параметр + атрибут» (А1, А2, …): ответ даёт атрибутам
         «преимущество». Номера правил считаются сами.
       </SectionHead>
-      <IssueList issues={issues.filter((issue) => issue.section === 'questions')} onSelect={reveal} />
 
       {base.attributes.length === 0 && <p className="editor-empty">Веса можно будет задать, когда появятся атрибуты.</p>}
 
@@ -79,7 +86,7 @@ export function QuestionsSection({ update }: { update: UpdateBase }) {
                   label="Группа блока"
                   hint="Блоки без группы общие: при равенстве процентов побеждает группа, набравшая больше в них."
                   value={block.group ?? ''}
-                  options={[{ value: '', label: 'Общий блок' }, ...base.groups.map((group) => ({ value: group.id, label: group.title || group.id }))]}
+                  options={[{ value: '', label: 'Общий блок' }, ...base.groups.map((group) => ({ value: group.id, label: group.title || 'Без названия' }))]}
                   onChange={(value) =>
                     editBlock(block.id, (item) => {
                       if (value) item.group = value;
@@ -104,7 +111,8 @@ export function QuestionsSection({ update }: { update: UpdateBase }) {
                     key={question.id}
                     question={question}
                     index={index}
-                    total={steps.length}
+                    canUp={index > 0 || blockIndex > 0}
+                    canDown={index < steps.length - 1 || blockIndex < base.blocks.length - 1}
                     open={open.has(question.id)}
                     onToggle={() => toggle(question.id)}
                     update={update}
@@ -124,6 +132,7 @@ export function QuestionsSection({ update }: { update: UpdateBase }) {
           Добавить блок
         </button>
       </div>
+      <IssueList issues={issues.filter((issue) => issue.section === 'questions')} onSelect={reveal} />
     </section>
   );
 }
@@ -131,13 +140,14 @@ export function QuestionsSection({ update }: { update: UpdateBase }) {
 interface QuestionCardProps {
   question: Question;
   index: number;
-  total: number;
+  canUp: boolean;
+  canDown: boolean;
   open: boolean;
   onToggle: () => void;
   update: UpdateBase;
 }
 
-function QuestionCard({ question, index, total, open, onToggle, update }: QuestionCardProps) {
+function QuestionCard({ question, index, canUp, canDown, open, onToggle, update }: QuestionCardProps) {
   const confirm = useConfirm();
   const { base, issues } = useBase();
   const inferredBy = base.rules.filter((rule) => rule.then.question === question.id);
@@ -153,8 +163,17 @@ function QuestionCard({ question, index, total, open, onToggle, update }: Questi
   async function remove() {
     const rules = rulesUsing(base, question.id);
     const lost = rulesLost(rules);
-    const yes = await confirm({ title: `Удалить вопрос ${index + 1}?`, message: [`«${title}».`, lost].filter(Boolean).join(' '), action: 'Удалить' });
+    const profiles = profilesAnswering(base, question.id);
+    const answers = profiles.length > 0 ? `Ответ на него пропадёт из ${profilesPhrase(profiles)}.` : '';
+    const yes = await confirm({ title: `Удалить вопрос ${index + 1}?`, message: [`«${title}».`, lost, answers].filter(Boolean).join(' '), action: 'Удалить' });
     if (yes) update((draft) => removeQuestion(draft, question.id));
+  }
+
+  /** «Ничего из этого» и общие объяснения работают только при нескольких ответах: если они заданы, спрашиваем. */
+  async function changeType(type: Question['type']) {
+    const warning = type === 'single' ? singleAnswerWarning(base, question) : '';
+    if (warning && !(await confirm({ title: 'Оставить только один ответ?', message: warning, action: 'Оставить один' }))) return;
+    edit((item) => setQuestionType(item, type));
   }
 
   return (
@@ -165,12 +184,12 @@ function QuestionCard({ question, index, total, open, onToggle, update }: Questi
           <span className="editor-question__name">{title}</span>
           {failed && <span className="editor__failed" title="В вопросе есть ошибки" aria-label="В вопросе есть ошибки" />}
           <span className="badge">{question.type === 'single' ? 'Один ответ' : 'Несколько ответов'}</span>
-          {inferredBy.length > 0 && <span className="badge badge--outline">Выводится правилом {inferredBy.map((rule) => rule.title).join(', ')}</span>}
+          {inferredBy.length > 0 && <span className="badge badge--outline">Выводится правилом {inferredBy.map(ruleTitle).join(', ')}</span>}
         </button>
         <RowActions
           label={`вопрос ${index + 1}`}
-          onUp={index > 0 ? () => update((draft) => moveQuestion(draft, question.id, -1)) : undefined}
-          onDown={index < total - 1 ? () => update((draft) => moveQuestion(draft, question.id, 1)) : undefined}
+          onUp={canUp ? () => update((draft) => moveQuestion(draft, question.id, -1)) : undefined}
+          onDown={canDown ? () => update((draft) => moveQuestion(draft, question.id, 1)) : undefined}
           onRemove={remove}
         />
       </div>
@@ -191,7 +210,7 @@ function QuestionCard({ question, index, total, open, onToggle, update }: Questi
                 { value: 'single', label: 'Один ответ' },
                 { value: 'multiple', label: 'Несколько ответов' },
               ]}
-              onChange={(value) => edit((item) => setQuestionType(item, value === 'multiple' ? 'multiple' : 'single'))}
+              onChange={(value) => changeType(value === 'multiple' ? 'multiple' : 'single')}
             />
             <CheckboxField
               label="Ситуационная задача"
@@ -280,7 +299,9 @@ function OptionsTable({ question, edit, update }: OptionsTableProps) {
     const rules = rulesUsing(base, question.id, option.id);
     const lost = rulesLost(rules);
     const name = option.text ? `«${option.text}».` : '';
-    const yes = await confirm({ title: `Удалить вариант ${index + 1}?`, message: [name, lost].filter(Boolean).join(' ') || undefined, action: 'Удалить' });
+    const profiles = profilesAnswering(base, question.id, option.id);
+    const answers = profiles.length > 0 ? `Этот ответ пропадёт из ${profilesPhrase(profiles)}.` : '';
+    const yes = await confirm({ title: `Удалить вариант ${index + 1}?`, message: [name, lost, answers].filter(Boolean).join(' ') || undefined, action: 'Удалить' });
     if (yes) update((draft) => removeOption(draft, question.id, option.id));
   }
 
@@ -313,6 +334,7 @@ function OptionsTable({ question, edit, update }: OptionsTableProps) {
                     className="cell-input"
                     rows={2}
                     value={option.text}
+                    maxLength={MAX_TEXT_LENGTH}
                     placeholder="Текст варианта"
                     aria-label={`Текст варианта ${index + 1}`}
                     onChange={(event) => editOption(option.id, (item) => void (item.text = event.target.value))}

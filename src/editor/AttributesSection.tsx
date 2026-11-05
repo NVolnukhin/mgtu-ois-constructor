@@ -5,7 +5,7 @@ import { IMPORTANCE_MAX } from '../engine/validate.ts';
 import { plural } from '../plural.ts';
 import type { UpdateBase } from './EditorScreen.tsx';
 import { IssueList, NumberField, RowActions, SectionHead, TextField } from './fields.tsx';
-import { addAttribute, attributeUsage, moveItem, removeAttribute } from './ops.ts';
+import { addAttribute, attributeUsage, moveItem, profilesExpectingGroup, profilesPhrase, removeAttribute } from './ops.ts';
 
 export function AttributesSection({ update }: { update: UpdateBase }) {
   const confirm = useConfirm();
@@ -24,9 +24,13 @@ export function AttributesSection({ update }: { update: UpdateBase }) {
       usage.weights > 0 && plural(usage.weights, ['вариант ответа с весом', 'варианта ответа с весом', 'вариантов ответа с весом']),
       ...usage.groups.map((group) => `группа «${group.title}»`),
     ].filter(Boolean);
+    const profiles = usage.groups.flatMap((group) => profilesExpectingGroup(base, group.id));
     const yes = await confirm({
       title: `Удалить атрибут «${attribute.title || 'без названия'}»?`,
-      message: lost.length > 0 ? `Вместе с ним пропадут: ${lost.join(', ')}.` : undefined,
+      message:
+        [lost.length > 0 && `Вместе с ним пропадут: ${lost.join(', ')}.`, profiles.length > 0 && `Ожидания об этой группе пропадут из ${profilesPhrase(profiles)}.`]
+          .filter(Boolean)
+          .join(' ') || undefined,
       action: 'Удалить',
     });
     if (yes) update((draft) => removeAttribute(draft, attribute.id));
@@ -38,7 +42,6 @@ export function AttributesSection({ update }: { update: UpdateBase }) {
         Свойства, по которым система сравнивает ответы человека с объектами. Важность — вес атрибута при сравнении: атрибут с важностью 2 влияет
         на рейтинг сильнее, чем с важностью 1.
       </SectionHead>
-      <IssueList issues={issues.filter((issue) => issue.section === 'attributes')} />
 
       <ul className="editor-list">
         {base.attributes.map((attribute, index) => {
@@ -89,6 +92,7 @@ export function AttributesSection({ update }: { update: UpdateBase }) {
           Добавить атрибут
         </button>
       </div>
+      <IssueList issues={issues.filter((issue) => issue.section === 'attributes')} />
     </section>
   );
 }

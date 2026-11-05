@@ -84,6 +84,11 @@ export function testPath(compiled: CompiledBase, answers: Answers | undefined): 
   return basePath(compiled.id, isComplete(compiled.base, answers) ? 'result' : 'test');
 }
 
+/** Название базы для показа: из одних пробелов оно выглядело бы как пустое место. */
+export function baseTitle(base: KnowledgeBase): string {
+  return base.title.trim() || 'Без названия';
+}
+
 export function groupsTitle(base: KnowledgeBase): string {
   return base.settings.groupsTitle || 'Группы';
 }
@@ -95,7 +100,7 @@ export function estimatedMinutes(questions: number): number {
 
 /** Доля от 0 до 1 в процентах: 0,724 → «72 %». */
 export function percent(value: number): string {
-  return `${Math.round(value * 100)} %`;
+  return `${Math.round(value * 100)}\u00a0%`;
 }
 
 /**
@@ -103,5 +108,5 @@ export function percent(value: number): string {
  * возможной — 0 % все ответы против, 50 % поровну, 100 % все за. Внутри движка это p от −1 до 1.
  */
 export function preferencePercent(preference: number): string {
-  return `${Math.round((preference + 1) * 50)} %`;
+  return `${Math.round((preference + 1) * 50)}\u00a0%`;
 }

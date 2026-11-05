@@ -3,11 +3,12 @@ import { useBase } from '../base.ts';
 import { IssueList, SelectField, TextField } from '../editor/fields.tsx';
 import { addProfile } from '../editor/ops.ts';
 import { EDITOR_SECTIONS } from '../editor/sections.ts';
-import { infer, selectedOptions, toggleOption } from '../engine/scoring.ts';
+import { infer, ruleTitle, selectedOptions, toggleOption } from '../engine/scoring.ts';
 import type { Question, TestProfile } from '../engine/types.ts';
 import { checkRequirements, runTestProfiles } from '../engine/validate.ts';
 import type { ProfileResult } from '../engine/validate.ts';
-import { plural } from '../plural.ts';
+import { refocus } from '../focus.ts';
+import { plural, pluralWord } from '../plural.ts';
 import { basePath } from '../router.ts';
 import { updateBase } from '../storage.ts';
 import { useConfirm } from './ConfirmDialog.tsx';
@@ -17,6 +18,7 @@ export function ChecksScreen() {
   const confirm = useConfirm();
   const { id, base, issues, builtIn, canRun } = useBase();
   const titleRef = useRef<HTMLHeadingElement>(null);
+  const addProfileRef = useRef<HTMLButtonElement>(null);
   const errors = issues.filter((issue) => issue.severity === 'error');
   const warnings = issues.filter((issue) => issue.severity === 'warning');
   const requirements = useMemo(() => checkRequirements(base), [base]);
@@ -39,6 +41,7 @@ export function ChecksScreen() {
     if (!yes) return;
     updateBase(id, (draft) => void draft.testProfiles.splice(index, 1));
     setEditing(null);
+    refocus(() => addProfileRef.current);
   }
 
   return (
@@ -52,7 +55,8 @@ export function ChecksScreen() {
         <h2 className="section__title">Ошибки в базе</h2>
         <p className={canRun ? 'check-summary check-summary--ok' : 'check-summary check-summary--fail'}>
           {canRun ? 'Ошибок нет, тест можно проходить.' : `${plural(errors.length, ['ошибка', 'ошибки', 'ошибок'])}: пока они есть, тест не запускается.`}
-          {warnings.length > 0 && ` ${plural(warnings.length, ['заметка', 'заметки', 'заметок'])}: на работу теста не влияют, но автору стоит посмотреть.`}
+          {warnings.length > 0 &&
+            ` ${plural(warnings.length, ['заметка', 'заметки', 'заметок'])}: на работу теста ${pluralWord(warnings.length, ['не влияет', 'не влияют', 'не влияют'])}, но автору стоит посмотреть.`}
         </p>
         {EDITOR_SECTIONS.map((section) => {
           const found = issues.filter((issue) => issue.section === section.id);
@@ -129,7 +133,7 @@ export function ChecksScreen() {
         )}
         {!builtIn && (
           <div className="actions">
-            <button type="button" className="btn btn--secondary btn--small" onClick={createProfile}>
+            <button ref={addProfileRef} type="button" className="btn btn--secondary btn--small" onClick={createProfile}>
               Добавить профиль
             </button>
           </div>
@@ -149,7 +153,7 @@ function CheckMark({ ok }: { ok: boolean }) {
 
 /** Процент с одним знаком после запятой: 95,8 %. На экране проверки важна точность. */
 function exactPercent(value: number): string {
-  return `${Math.round(value * 10) / 10}`.replace('.', ',') + ' %';
+  return `${Math.round(value * 10) / 10}`.replace('.', ',') + '\u00a0%';
 }
 
 interface ProfileCardProps {
@@ -285,7 +289,7 @@ function ProfileForm({ profile, onChange }: { profile: TestProfile; onChange: (c
                 checked={profile.expectGroup?.includes(group.id) ?? false}
                 onChange={(event) => toggleInList('expectGroup', group.id, event.target.checked)}
               />
-              <span>{group.title || group.id}</span>
+              <span>{group.title || 'Без названия'}</span>
             </label>
           ))}
         </fieldset>
@@ -300,7 +304,7 @@ function ProfileForm({ profile, onChange }: { profile: TestProfile; onChange: (c
               checked={profile.expectTop?.includes(object.id) ?? false}
               onChange={(event) => toggleInList('expectTop', object.id, event.target.checked)}
             />
-            <span>{object.title || object.id}</span>
+            <span>{object.title || 'Без названия'}</span>
           </label>
         ))}
       </fieldset>
@@ -334,7 +338,7 @@ function AnswersForm({ profile, onChange }: { profile: TestProfile; onChange: (c
               <p key={question.id} className="profile-answers__inferred">
                 <span className="field__label">{label}</span>
                 <span className="field__hint">
-                  Выводится правилом {rule.title}: «{selectedOptions(question, effective)[0]?.text}»
+                  Выводится правилом {ruleTitle(rule)}: «{selectedOptions(question, effective)[0]?.text}»
                 </span>
               </p>
             );

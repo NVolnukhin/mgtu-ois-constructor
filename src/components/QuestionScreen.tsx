@@ -3,6 +3,7 @@ import type { FormEvent } from 'react';
 import { useBase } from '../base.ts';
 import type { Step } from '../base.ts';
 import { isSafeImageUrl } from '../engine/images.ts';
+import { ruleTitle } from '../engine/scoring.ts';
 import type { ObjectScore } from '../engine/scoring.ts';
 import type { Option, Question, Rule } from '../engine/types.ts';
 import { LiveRanking } from './LiveRanking.tsx';
@@ -25,10 +26,14 @@ interface QuestionScreenProps {
   finishing: boolean;
   /** Первый задаваемый вопрос блока: показать описание блока. */
   blockStart: boolean;
-  /** Доля пройденного по каждому блоку, от 0 до 1. */
+  /** Номер блока среди тех, где есть что спросить, с 1. */
+  blockNumber: number;
+  /** Доля пройденного по каждому такому блоку, от 0 до 1. */
   progress: number[];
   /** Вопросы перед этим, которые не задавались: их значение вывели правила. */
   skipped: SkippedQuestion[];
+  /** Этот вопрос последний, а следующие вывели правила: сказать о них больше негде. */
+  skippedAfter: SkippedQuestion[];
   ranking: ObjectScore[];
   /** Рейтинг до ответа на этот вопрос; null — до этого ответов не было. */
   previousRanking: ObjectScore[] | null;
@@ -38,13 +43,22 @@ interface QuestionScreenProps {
   onBack: () => void;
 }
 
+function SkippedNotice({ question, rule, option }: SkippedQuestion) {
+  return (
+    <p className="notice">
+      <span className="notice__label">Правило {ruleTitle(rule)}</span>
+      Вопрос «{question.parameter}» не задаётся: по ответам система сама вывела значение «{option.text}».
+    </p>
+  );
+}
+
 export function QuestionScreen(props: QuestionScreenProps) {
-  const { base, steps } = useBase();
-  const { step, selected, position, total, finishing, blockStart, progress, skipped, ranking, previousRanking, hasData } = props;
-  const { question, block, blockIndex, index } = step;
+  const { steps } = useBase();
+  const { step, selected, position, total, finishing, blockStart, blockNumber, progress, skipped, skippedAfter, ranking, previousRanking, hasData } = props;
+  const { question, block, index } = step;
   const titleRef = useRef<HTMLHeadingElement>(null);
   const inputType = question.type === 'single' ? 'radio' : 'checkbox';
-  const severalBlocks = base.blocks.length > 1;
+  const severalBlocks = progress.length > 1;
 
   // Новый вопрос: фокус на его текст, чтобы экранный диктор сразу его прочитал,
   // и заранее грузим картинку следующего вопроса.
@@ -73,8 +87,8 @@ export function QuestionScreen(props: QuestionScreenProps) {
       <div className="question__content">
         <div className="progress">
           <div className="progress__meta">
-            <span>{severalBlocks ? `Блок ${blockIndex + 1} из ${base.blocks.length}${block.title ? ` · ${block.title}` : ''}` : block.title}</span>
-            <span>
+            <span>{severalBlocks ? `Блок ${blockNumber} из ${progress.length}${block.title ? ` · ${block.title}` : ''}` : block.title}</span>
+            <span className="progress__count">
               {position} / {total}
             </span>
           </div>
@@ -86,9 +100,9 @@ export function QuestionScreen(props: QuestionScreenProps) {
             aria-valuemax={total}
             aria-valuenow={position}
           >
-            {base.blocks.map((item, i) => (
-              <span key={item.id} className="progress__track">
-                <span className="progress__fill" style={{ width: `${progress[i] * 100}%` }} />
+            {progress.map((share, i) => (
+              <span key={i} className="progress__track">
+                <span className="progress__fill" style={{ width: `${share * 100}%` }} />
               </span>
             ))}
           </div>
@@ -96,11 +110,8 @@ export function QuestionScreen(props: QuestionScreenProps) {
 
         {blockStart && block.description && <p className="question__block">{block.description}</p>}
 
-        {skipped.map(({ question: skippedQuestion, rule, option }) => (
-          <p key={skippedQuestion.id} className="notice">
-            <span className="notice__label">Правило {rule.title}</span>
-            Вопрос «{skippedQuestion.parameter}» не задаётся: по предыдущим ответам система сама вывела значение «{option.text}».
-          </p>
+        {skipped.map((item) => (
+          <SkippedNotice key={item.question.id} {...item} />
         ))}
 
         <div className="badges">
@@ -137,6 +148,12 @@ export function QuestionScreen(props: QuestionScreenProps) {
             })}
           </div>
         </fieldset>
+
+        <div aria-live="polite">
+          {skippedAfter.map((item) => (
+            <SkippedNotice key={item.question.id} {...item} />
+          ))}
+        </div>
       </div>
 
       <div className="navbar">

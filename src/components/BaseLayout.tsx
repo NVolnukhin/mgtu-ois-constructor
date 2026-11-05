@@ -1,9 +1,10 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
-import { useBase } from '../base.ts';
+import { baseTitle, useBase } from '../base.ts';
 import { basePath, HOME_PATH } from '../router.ts';
 import type { BaseSection } from '../router.ts';
 import { baseImages } from '../engine/images.ts';
+import { StorageBanner } from './StorageBanner.tsx';
 
 const NAV: { section: BaseSection; title: string }[] = [
   { section: 'kb', title: 'База знаний' },
@@ -25,23 +26,40 @@ interface BaseLayoutProps {
 export function BaseLayout({ section, returnPath, wide = true, children }: BaseLayoutProps) {
   const { id, base } = useBase();
   const [menuOpen, setMenuOpen] = useState(false);
+  const navRef = useRef<HTMLElement>(null);
+  const title = baseTitle(base);
   const inTest = section === 'start' || section === 'test' || section === 'result';
   const hasCredits = baseImages(base).some(({ image }) => image.credit);
 
   useEffect(() => {
-    document.title = base.title || 'Без названия';
-  }, [base.title]);
+    document.title = title;
+  }, [title]);
 
   // Сменился экран — закрываем меню.
   useEffect(() => {
     setMenuOpen(false);
   }, [section]);
 
+  // Открытое меню закрывает часть экрана, поэтому закрывается любым действием мимо него.
   useEffect(() => {
     if (!menuOpen) return;
-    const close = (event: KeyboardEvent) => event.key === 'Escape' && setMenuOpen(false);
-    window.addEventListener('keydown', close);
-    return () => window.removeEventListener('keydown', close);
+    const close = () => setMenuOpen(false);
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape') return;
+      close();
+      navRef.current?.querySelector<HTMLElement>('.topnav__menu')?.focus();
+    };
+    const closeOutside = (event: PointerEvent) => {
+      if (!navRef.current?.contains(event.target as Node)) close();
+    };
+    window.addEventListener('keydown', closeOnEscape);
+    window.addEventListener('pointerdown', closeOutside);
+    window.addEventListener('scroll', close, { passive: true });
+    return () => {
+      window.removeEventListener('keydown', closeOnEscape);
+      window.removeEventListener('pointerdown', closeOutside);
+      window.removeEventListener('scroll', close);
+    };
   }, [menuOpen]);
 
   const linkClass = (active: boolean) => (active ? 'topnav__link topnav__link--active' : 'topnav__link');
@@ -57,11 +75,11 @@ export function BaseLayout({ section, returnPath, wide = true, children }: BaseL
           <span className="topbar__sep" aria-hidden="true">
             /
           </span>
-          <a className="topbar__base" href={basePath(id)} title={base.title}>
-            {base.title || 'Без названия'}
+          <a className="topbar__base" href={basePath(id)} title={title}>
+            {title}
           </a>
         </div>
-        <nav className="topnav" aria-label="Разделы базы">
+        <nav ref={navRef} className="topnav" aria-label="Разделы базы">
           <button
             type="button"
             className="topnav__menu"
@@ -72,7 +90,8 @@ export function BaseLayout({ section, returnPath, wide = true, children }: BaseL
             <span className="topnav__menu-icon" aria-hidden="true" />
             <span className="visually-hidden">Меню</span>
           </button>
-          <div id="topnav-links" className={menuOpen ? 'topnav__links topnav__links--open' : 'topnav__links'}>
+          {/* Нажатие на пункт текущего раздела экран не меняет, но меню тоже должно закрыть. */}
+          <div id="topnav-links" className={menuOpen ? 'topnav__links topnav__links--open' : 'topnav__links'} onClick={() => setMenuOpen(false)}>
             <a className={linkClass(inTest)} aria-current={inTest ? 'page' : undefined} href={returnPath}>
               Тест
             </a>
@@ -89,6 +108,7 @@ export function BaseLayout({ section, returnPath, wide = true, children }: BaseL
           </div>
         </nav>
       </header>
+      <StorageBanner />
 
       {/* key: при смене экрана содержимое монтируется заново и плавно появляется */}
       <main key={section} className={wide ? 'main main--wide' : 'main'}>

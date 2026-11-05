@@ -31,7 +31,13 @@ export function CreditsScreen({ returnPath }: { returnPath: string }) {
             <div className="credit__text">
               {alt && <p className="credit__alt">{alt}</p>}
               <p className="credit__meta">
-                {[credit?.author, creditLink(credit?.licenseUrl, credit?.license), creditLink(credit?.url, credit?.source ?? credit?.title)]
+                {[
+                  credit?.author,
+                  // Название работы ведёт на её страницу, если сайт не назван. Если назван, ссылка стоит на нём.
+                  credit?.source ? credit.title : creditLink(credit?.url, credit?.title),
+                  creditLink(credit?.licenseUrl, credit?.license),
+                  credit?.source && creditLink(credit.url, credit.source),
+                ]
                   .filter(Boolean)
                   .map((part, index) => (
                     <Fragment key={index}>

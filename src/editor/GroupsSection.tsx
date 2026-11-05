@@ -3,7 +3,7 @@ import { useConfirm } from '../components/ConfirmDialog.tsx';
 import type { Group } from '../engine/types.ts';
 import type { UpdateBase } from './EditorScreen.tsx';
 import { ImageField, IssueList, ListField, RowActions, SectionHead, SelectField, TextField } from './fields.tsx';
-import { addGroup, moveItem, removeGroup } from './ops.ts';
+import { addGroup, moveItem, profilesExpectingGroup, profilesPhrase, removeGroup } from './ops.ts';
 
 export function GroupsSection({ update }: { update: UpdateBase }) {
   const confirm = useConfirm();
@@ -16,15 +16,12 @@ export function GroupsSection({ update }: { update: UpdateBase }) {
     });
 
   async function remove(group: Group) {
-    const last = base.groups.length === 1;
-    const inProfiles = base.testProfiles.some(
-      (profile) => profile.expectGroup?.includes(group.id) || (last && (profile.expectClose !== undefined || profile.expectWeak !== undefined)),
-    );
+    const profiles = profilesExpectingGroup(base, group.id);
     const yes = await confirm({
       title: `Удалить группу «${group.title || 'без названия'}»?`,
       message:
         'Объекты и блоки останутся без группы, связанный атрибут останется в базе.' +
-        (inProfiles ? ' Тестовые профили перестанут проверять связанные с ней ожидания.' : ''),
+        (profiles.length > 0 ? ` Ожидания о ней пропадут из ${profilesPhrase(profiles)}.` : ''),
       action: 'Удалить',
     });
     if (yes) update((draft) => removeGroup(draft, group.id));
@@ -36,7 +33,6 @@ export function GroupsSection({ update }: { update: UpdateBase }) {
         Необязательны. Без групп система показывает только рейтинг объектов. С группами в конце теста появляется итог вроде «направленности»:
         группа связана с атрибутом, а её результат — доля баллов этого атрибута от возможного максимума.
       </SectionHead>
-      <IssueList issues={issues.filter((issue) => issue.section === 'groups')} />
 
       <ul className="editor-list">
         {base.groups.map((group, index) => {
@@ -60,7 +56,7 @@ export function GroupsSection({ update }: { update: UpdateBase }) {
                   label="Связанный атрибут"
                   hint="Итог группы — доля баллов этого атрибута."
                   value={group.attribute}
-                  options={free.map((attribute) => ({ value: attribute.id, label: attribute.title || attribute.id }))}
+                  options={free.map((attribute) => ({ value: attribute.id, label: attribute.title || 'Без названия' }))}
                   onChange={(value) => edit(group.id, (item) => void (item.attribute = value))}
                 />
                 <TextField
@@ -124,6 +120,7 @@ export function GroupsSection({ update }: { update: UpdateBase }) {
           Добавить группу
         </button>
       </div>
+      <IssueList issues={issues.filter((issue) => issue.section === 'groups')} />
     </section>
   );
 }

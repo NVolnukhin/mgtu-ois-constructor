@@ -3,9 +3,10 @@
 
 import { useEffect, useMemo, useReducer } from 'react';
 import type { CompiledBase } from './base.ts';
-import { infer, selectedOptions, toggleOption } from './engine/scoring.ts';
+import { resumeStep, selectedOptions, toggleOption } from './engine/scoring.ts';
 import type { Answers } from './engine/types.ts';
-import { clearSession, loadSession, saveSession } from './storage.ts';
+import { clearSession, loadSession, onSessionChange, saveSession } from './storage.ts';
+import type { StoredSession } from './storage.ts';
 
 export interface QuizState {
   /** Индекс текущего вопроса среди всех вопросов базы знаний. */
@@ -16,26 +17,11 @@ export interface QuizState {
 export type QuizAction =
   | { type: 'reset' }
   | { type: 'toggle'; optionId: string }
-  | { type: 'goto'; step: number };
+  | { type: 'goto'; step: number }
+  /** Ответы изменила другая вкладка: ход теста у базы один. */
+  | { type: 'sync'; session: StoredSession | null };
 
 const INITIAL: QuizState = { step: 0, answers: {} };
-
-/** Ближайший вопрос в направлении direction, который задаётся пользователю (не выведен правилом). */
-export function nearestAsked(compiled: CompiledBase, from: number, direction: 1 | -1, answers: Answers): number | null {
-  const { steps, base } = compiled;
-  const { inferred } = infer(base, answers);
-  for (let i = from; i >= 0 && i < steps.length; i += direction) {
-    if (!inferred.has(steps[i].question.id)) return i;
-  }
-  return null;
-}
-
-/** Первый задаваемый вопрос без ответа. Он может оказаться позади текущего, если базу изменили после начала теста. */
-export function firstUnanswered(compiled: CompiledBase, answers: Answers): number | null {
-  const { answers: effective, inferred } = infer(compiled.base, answers);
-  const found = compiled.steps.find(({ question }) => !inferred.has(question.id) && selectedOptions(question, effective).length === 0);
-  return found ? found.index : null;
-}
 
 /** Оставляет только ответы на существующие вопросы и варианты; в вопросе с одним ответом — один. */
 function currentAnswers(compiled: CompiledBase, saved: Answers): Answers {
@@ -52,9 +38,7 @@ function load(compiled: CompiledBase): QuizState {
   const saved = loadSession(compiled.id);
   if (!saved) return INITIAL;
   const answers = currentAnswers(compiled, saved.answers);
-  const last = Math.max(0, compiled.steps.length - 1);
-  const step = Math.min(Math.max(0, saved.step), last);
-  return { step: nearestAsked(compiled, step, 1, answers) ?? 0, answers };
+  return { step: resumeStep(compiled.base, answers, saved.step), answers };
 }
 
 export function useQuizState(compiled: CompiledBase) {
@@ -71,6 +55,12 @@ export function useQuizState(compiled: CompiledBase) {
           }
           case 'goto':
             return { ...state, step: action.step };
+          case 'sync': {
+            const answers = currentAnswers(compiled, action.session?.answers ?? {});
+            // Ответы те же: состояние не меняем, иначе две вкладки записывали бы свой номер вопроса друг за другом бесконечно.
+            if (JSON.stringify(answers) === JSON.stringify(currentAnswers(compiled, state.answers))) return state;
+            return { step: resumeStep(compiled.base, answers, action.session?.step ?? 0), answers };
+          }
         }
       },
     [compiled],
@@ -81,6 +71,11 @@ export function useQuizState(compiled: CompiledBase) {
     if (state.step === 0 && Object.keys(state.answers).length === 0) clearSession(compiled.id);
     else saveSession(compiled.id, state);
   }, [state, compiled.id]);
+
+  useEffect(
+    () => onSessionChange(compiled.id, () => dispatch({ type: 'sync', session: loadSession(compiled.id) })),
+    [compiled.id],
+  );
 
   return [state, dispatch] as const;
 }

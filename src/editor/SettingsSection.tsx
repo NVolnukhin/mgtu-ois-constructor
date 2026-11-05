@@ -8,7 +8,6 @@ export function SettingsSection({ update }: { update: UpdateBase }) {
   return (
     <section>
       <SectionHead title="Настройки">Формула вывода одна на все базы, а эти значения у каждой базы свои.</SectionHead>
-      <IssueList issues={issues.filter((issue) => issue.section === 'settings')} />
       <div className="form-grid">
         <NumberField
           label="Сколько лучших объектов показывать"
@@ -59,6 +58,7 @@ export function SettingsSection({ update }: { update: UpdateBase }) {
           }
         />
       </div>
+      <IssueList issues={issues.filter((issue) => issue.section === 'settings')} />
     </section>
   );
 }

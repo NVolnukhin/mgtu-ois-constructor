@@ -1,12 +1,14 @@
 import { useBase } from '../base.ts';
 import { useConfirm } from '../components/ConfirmDialog.tsx';
-import { allQuestions } from '../engine/scoring.ts';
+import { allQuestions, ruleTitle } from '../engine/scoring.ts';
 import type { Condition, Question, Rule } from '../engine/types.ts';
 import { minAskedQuestions } from '../engine/validate.ts';
+import { MAX_TEXT_LENGTH } from '../engine/parse.ts';
+import { refocus } from '../focus.ts';
 import { plural } from '../plural.ts';
 import type { UpdateBase } from './EditorScreen.tsx';
 import { IssueList, RowActions, SectionHead, TextField } from './fields.tsx';
-import { addCondition, addRule, moveItem } from './ops.ts';
+import { addCondition, addRule, moveItem, nextCondition } from './ops.ts';
 
 export function RulesSection({ update }: { update: UpdateBase }) {
   const confirm = useConfirm();
@@ -31,7 +33,6 @@ export function RulesSection({ update }: { update: UpdateBase }) {
         При {plural(steps.length, ['вопросе', 'вопросах', 'вопросах'])} задаётся не меньше {minAskedQuestions(base)}. Правила «параметр + атрибут» (их{' '}
         {attributeRules.length}) — это варианты ответа и их веса, они задаются в разделе «Вопросы».
       </p>
-      <IssueList issues={sectionIssues} />
 
       <ol className="editor-list">
         {base.rules.map((rule, index) => (
@@ -41,16 +42,17 @@ export function RulesSection({ update }: { update: UpdateBase }) {
                 className="cell-input cell-input--rule-title"
                 type="text"
                 value={rule.title}
+                maxLength={MAX_TEXT_LENGTH}
                 aria-label={`Обозначение правила ${index + 1}`}
                 onChange={(event) => edit(rule.id, (item) => void (item.title = event.target.value))}
               />
               <span className="editor-card__title" />
               <RowActions
-                label={`правило ${rule.title}`}
+                label={`правило ${ruleTitle(rule)}`}
                 onUp={index > 0 ? () => update((draft) => moveItem(draft.rules, index, -1)) : undefined}
                 onDown={index < base.rules.length - 1 ? () => update((draft) => moveItem(draft.rules, index, 1)) : undefined}
                 onRemove={async () => {
-                  if (await confirm({ title: `Удалить правило ${rule.title}?`, action: 'Удалить' })) {
+                  if (await confirm({ title: `Удалить правило ${ruleTitle(rule)}?`, action: 'Удалить' })) {
                     update((draft) => void (draft.rules = draft.rules.filter((item) => item.id !== rule.id)));
                   }
                 }}
@@ -63,7 +65,7 @@ export function RulesSection({ update }: { update: UpdateBase }) {
                   <span className="rule__keyword">{conditionIndex === 0 ? 'ЕСЛИ' : 'И'}</span>
                   <ConditionEditor
                     condition={condition}
-                    label={`Условие ${conditionIndex + 1} правила ${rule.title}`}
+                    label={`Условие ${conditionIndex + 1} правила ${ruleTitle(rule)}`}
                     onChange={(next) => edit(rule.id, (item) => void (item.if[conditionIndex] = next))}
                   />
                   <button
@@ -72,7 +74,12 @@ export function RulesSection({ update }: { update: UpdateBase }) {
                     aria-label={`Убрать условие ${conditionIndex + 1}`}
                     title={rule.if.length > 1 ? 'Убрать условие' : 'У правила должно быть хотя бы одно условие'}
                     disabled={rule.if.length === 1}
-                    onClick={() => edit(rule.id, (item) => void item.if.splice(conditionIndex, 1))}
+                    onClick={(event) => {
+                      const form = event.currentTarget.closest('.rule-form');
+                      edit(rule.id, (item) => void item.if.splice(conditionIndex, 1));
+                      // Кнопка исчезла вместе со строкой условия.
+                      refocus(() => form?.querySelector<HTMLElement>('.rule-form__add button'));
+                    }}
                   >
                     ×
                   </button>
@@ -82,6 +89,8 @@ export function RulesSection({ update }: { update: UpdateBase }) {
                 <button
                   type="button"
                   className="text-button"
+                  disabled={nextCondition(base, rule) === null}
+                  title={nextCondition(base, rule) === null ? 'Раньше выводимого вопроса не осталось других вопросов и вариантов' : undefined}
                   onClick={() =>
                     update((draft) => {
                       const item = draft.rules.find((candidate) => candidate.id === rule.id);
@@ -96,7 +105,7 @@ export function RulesSection({ update }: { update: UpdateBase }) {
                 <span className="rule__keyword">ТО</span>
                 <ConditionEditor
                   condition={rule.then}
-                  label={`Заключение правила ${rule.title}`}
+                  label={`Заключение правила ${ruleTitle(rule)}`}
                   onChange={(next) => edit(rule.id, (item) => void (item.then = next))}
                 />
               </div>
@@ -118,6 +127,7 @@ export function RulesSection({ update }: { update: UpdateBase }) {
           Добавить правило
         </button>
       </div>
+      <IssueList issues={sectionIssues} />
     </section>
   );
 }

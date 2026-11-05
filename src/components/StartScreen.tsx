@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { estimatedMinutes, groupsTitle, useBase } from '../base.ts';
+import { baseTitle, estimatedMinutes, groupsTitle, useBase } from '../base.ts';
 import { copyOf } from '../editor/ops.ts';
 import { downloadBase } from '../files.ts';
 import { plural } from '../plural.ts';
@@ -8,7 +8,7 @@ import { createBase } from '../storage.ts';
 import { Photo } from './Photo.tsx';
 
 interface StartScreenProps {
-  /** Сколько вопросов уже отвечено в прошлый раз. */
+  /** Сколько параметров уже известно: отвечено в прошлый раз или выведено правилами. */
   answered: number;
   /** Все параметры получены, результат уже можно посмотреть. */
   complete: boolean;
@@ -24,8 +24,13 @@ export function StartScreen({ answered, complete, onStart, onResume }: StartScre
   const errors = issues.filter((issue) => issue.severity === 'error').length;
   const title = groupsTitle(base);
 
+  const hasSingle = steps.some(({ question }) => question.type === 'single');
+  const hasMultiple = steps.some(({ question }) => question.type === 'multiple');
+  const choice = hasSingle && hasMultiple ? 'В одних можно выбрать один ответ, в других — несколько.' : hasMultiple ? 'Можно выбирать несколько ответов.' : 'Выбирать нужно один ответ.';
+  const inference = base.rules.length > 0 ? ' Если ответ следует из предыдущих, система выведет его сама и не станет спрашивать.' : '';
+
   const howItWorks = [
-    `Всего ${plural(steps.length, ['вопрос', 'вопроса', 'вопросов'])}. В одних можно выбрать один ответ, в других — несколько. Если ответ следует из предыдущих, система выведет его сама и не станет спрашивать.`,
+    steps.length > 0 ? `Всего ${plural(steps.length, ['вопрос', 'вопроса', 'вопросов'])}. ${choice}${inference}` : 'Вопросов пока нет.',
     `Каждый ответ даёт «преимущество» свойствам объектов, и после каждого ответа система пересчитывает рейтинг из ${plural(base.objects.length, ['позиции', 'позиций', 'позиций'])}.`,
     hasGroups
       ? 'В конце будет итог, весь рейтинг и объяснение, почему лидеры подходят.'
@@ -42,12 +47,12 @@ export function StartScreen({ answered, complete, onStart, onResume }: StartScre
         <div className="start__intro">
           {base.subtitle && <p className="eyebrow">{base.subtitle}</p>}
           <h1 ref={titleRef} tabIndex={-1} className="start__title">
-            {base.title || 'Без названия'}
+            {baseTitle(base)}
           </h1>
           {base.description && <p className="start__lead">{base.description}</p>}
           <ul className="facts" aria-label="Коротко о тесте">
             <li>{plural(steps.length, ['вопрос', 'вопроса', 'вопросов'])}</li>
-            <li>≈ {plural(estimatedMinutes(steps.length), ['минута', 'минуты', 'минут'])}</li>
+            {steps.length > 0 && <li>≈ {plural(estimatedMinutes(steps.length), ['минута', 'минуты', 'минут'])}</li>}
             <li>{plural(base.objects.length, ['позиция', 'позиции', 'позиций'])} в рейтинге</li>
             {hasGroups && (
               <li>
@@ -77,13 +82,19 @@ export function StartScreen({ answered, complete, onStart, onResume }: StartScre
             <div className="actions">
               {hasProgress ? (
                 <>
-                  <button type="button" className="btn btn--primary" onClick={onResume}>
-                    Продолжить
-                  </button>
-                  {complete && (
-                    <a className="btn btn--secondary" href={basePath(id, 'result')}>
-                      Посмотреть результат
-                    </a>
+                  {complete ? (
+                    <>
+                      <a className="btn btn--primary" href={basePath(id, 'result')}>
+                        Посмотреть результат
+                      </a>
+                      <button type="button" className="btn btn--secondary" onClick={onResume}>
+                        Изменить ответы
+                      </button>
+                    </>
+                  ) : (
+                    <button type="button" className="btn btn--primary" onClick={onResume}>
+                      Продолжить
+                    </button>
                   )}
                   <button type="button" className="btn btn--secondary" onClick={onStart}>
                     Начать заново
@@ -98,7 +109,7 @@ export function StartScreen({ answered, complete, onStart, onResume }: StartScre
           )}
           {canRun && hasProgress && (
             <p className="start__progress">
-              Уже есть ответы на {answered} из {plural(steps.length, ['вопроса', 'вопросов', 'вопросов'])}.
+              {complete ? 'Тест пройден: ответы есть на все вопросы.' : `Уже есть ответы на ${answered} из ${plural(steps.length, ['вопроса', 'вопросов', 'вопросов'])}.`}
             </p>
           )}
         </div>

@@ -4,9 +4,9 @@
 import { baseImages, isSafeImagePosition, isSafeImageUrl, isSafeLinkUrl } from './images.ts';
 import { parseBaseText } from './parse.ts';
 import type { ParseResult } from './parse.ts';
-import { allQuestions, askedQuestions, evaluate, infer, maxScores, questionBounds, selectedOptions, weight } from './scoring.ts';
+import { allQuestions, askedQuestions, evaluate, infer, maxScores, questionBounds, ruleTitle, selectedOptions, weight } from './scoring.ts';
 import type { Evaluation } from './scoring.ts';
-import type { KnowledgeBase, Question, TestProfile } from './types.ts';
+import type { KnowledgeBase, Question, Rule, TestProfile } from './types.ts';
 
 /** Раздел редактора, где правится найденная проблема. */
 export type IssueSection = 'general' | 'attributes' | 'groups' | 'objects' | 'questions' | 'rules' | 'settings';
@@ -54,6 +54,8 @@ export function validateBase(base: KnowledgeBase): Issue[] {
     const seen = new Set<string>();
     return ids.filter((id) => seen.has(id) || !seen.add(id));
   };
+  /** Название атрибута в сообщении: служебный id человеку ни о чём не говорит. */
+  const attributeName = (id: string) => `«${base.attributes.find((a) => a.id === id)?.title || 'без названия'}»`;
 
   // Основное
   if (!base.title.trim()) error('general', 'Нет названия базы.');
@@ -74,12 +76,12 @@ export function validateBase(base: KnowledgeBase): Issue[] {
   // Атрибуты
   if (base.attributes.length === 0) error('attributes', 'Нет ни одного атрибута: не с чем сравнивать объекты.');
   else if (base.attributes.every((attribute) => attribute.importance === 0)) {
-    error('attributes', 'У всех атрибутов важность 0: рейтинг не работает, совпадение всегда будет 50 %.');
+    error('attributes', 'У всех атрибутов важность 0: рейтинг не работает, совпадение всегда будет 50\u00a0%.');
   }
   for (const id of new Set(repeated(base.attributes.map((a) => a.id)))) broken('attributes', `id атрибута «${id}» повторяется.`, id);
-  for (const attribute of base.attributes) {
-    const at = `Атрибут «${attribute.title || attribute.id}»`;
-    if (!attribute.title.trim()) error('attributes', `Атрибут ${attribute.id}: нет названия.`, attribute.id);
+  base.attributes.forEach((attribute, index) => {
+    const at = attribute.title.trim() ? `Атрибут «${attribute.title}»` : `Атрибут ${index + 1}`;
+    if (!attribute.title.trim()) error('attributes', `${at}: нет названия.`, attribute.id);
     if (!(attribute.importance >= 0 && attribute.importance <= IMPORTANCE_MAX)) {
       error('attributes', `${at}: важность должна быть от 0 до ${IMPORTANCE_MAX}.`, attribute.id);
     }
@@ -89,33 +91,33 @@ export function validateBase(base: KnowledgeBase): Issue[] {
     if (questions.length > 0 && !questions.some((q) => q.options.some((o) => weight(o, attribute.id) !== 0))) {
       warning('attributes', `${at}: ни один вариант ответа не даёт ему весов, предпочтение всегда нулевое.`, attribute.id);
     }
-  }
+  });
 
   // Группы
   for (const id of new Set(repeated(base.groups.map((g) => g.id)))) broken('groups', `id группы «${id}» повторяется.`, id);
   if (base.groups.length === 1) warning('groups', 'Группа всего одна: итог всегда будет один и тот же.', base.groups[0].id);
   const max = maxScores(base);
   const linked = new Map<string, string>();
-  for (const group of base.groups) {
-    const at = `Группа «${group.title || group.id}»`;
-    if (!group.title.trim()) error('groups', `Группа ${group.id}: нет названия.`, group.id);
+  base.groups.forEach((group, index) => {
+    const at = group.title.trim() ? `Группа «${group.title}»` : `Группа ${index + 1}`;
+    if (!group.title.trim()) error('groups', `${at}: нет названия.`, group.id);
     if (!attributeIds.has(group.attribute)) {
       broken('groups', `${at}: нет связанного атрибута, а итог группы — это доля его баллов.`, group.id);
-      continue;
+      return;
     }
     const other = linked.get(group.attribute);
-    if (other) error('groups', `${at}: атрибут уже связан с группой «${other}», итоги групп всегда совпадали бы.`, group.id);
-    linked.set(group.attribute, group.title || group.id);
+    if (other) error('groups', `${at}: атрибут уже связан с другой группой (${other}), итоги групп всегда совпадали бы.`, group.id);
+    linked.set(group.attribute, at);
     if (questions.length > 0 && !(max[group.attribute] > 0)) {
-      warning('groups', `${at}: ни один вариант ответа не даёт её атрибуту баллов, итог группы всегда 0 %.`, group.id);
+      warning('groups', `${at}: ни один вариант ответа не даёт её атрибуту баллов, итог группы всегда 0\u00a0%.`, group.id);
     }
     if (questions.some((q) => q.options.some((o) => weight(o, group.attribute) < 0))) {
-      warning('groups', `${at}: у её атрибута есть отрицательные веса, итог группы может уйти ниже нуля.`, group.id);
+      warning('groups', `${at}: у её атрибута есть отрицательные веса. Итог группы — доля от максимума, ниже 0\u00a0% он не опускается.`, group.id);
     }
     if (base.objects.length > 0 && !base.objects.some((o) => o.group === group.id)) {
       warning('groups', `${at}: в ней нет объектов.`, group.id);
     }
-  }
+  });
   const maxima = base.groups.filter((g) => attributeIds.has(g.attribute)).map((g) => max[g.attribute]);
   if (maxima.length > 1 && questions.length > 0 && Math.min(...maxima) !== Math.max(...maxima)) {
     warning('groups', `Максимумы групп различаются: ${base.groups.filter((g) => attributeIds.has(g.attribute)).map((g) => `${g.title} ${max[g.attribute]}`).join(', ')}. Группе с меньшим максимумом легче набрать высокий процент.`);
@@ -124,25 +126,25 @@ export function validateBase(base: KnowledgeBase): Issue[] {
   // Объекты
   if (base.objects.length === 0) error('objects', 'Нет ни одного объекта: нечего ранжировать.');
   for (const id of new Set(repeated(base.objects.map((o) => o.id)))) broken('objects', `id объекта «${id}» повторяется.`, id);
-  for (const object of base.objects) {
-    const at = `Объект «${object.title || object.id}»`;
-    if (!object.title.trim()) error('objects', `Объект ${object.id}: нет названия.`, object.id);
+  base.objects.forEach((object, index) => {
+    const at = object.title.trim() ? `Объект «${object.title}»` : `Объект ${index + 1}`;
+    if (!object.title.trim()) error('objects', `${at}: нет названия.`, object.id);
     if (object.group !== undefined && !groupIds.has(object.group)) broken('objects', `${at}: нет группы «${object.group}».`, object.id);
     for (const [id, value] of Object.entries(object.values)) {
       if (!attributeIds.has(id)) {
         broken('objects', `${at}: неизвестный атрибут «${id}».`, object.id);
       } else if (!Number.isInteger(value) || value < VALUE_RANGE.min || value > VALUE_RANGE.max) {
-        error('objects', `${at}: значение атрибута «${id}» должно быть целым от ${VALUE_RANGE.min} до ${VALUE_RANGE.max}.`, object.id);
+        error('objects', `${at}: значение атрибута ${attributeName(id)} должно быть целым от ${VALUE_RANGE.min} до ${VALUE_RANGE.max}.`, object.id);
       }
     }
     if (base.attributes.length > 0 && !base.attributes.some((a) => (object.values[a.id] ?? 0) > 0)) {
-      warning('objects', `${at}: все значения нулевые, совпадение всегда будет 50 %.`, object.id);
+      warning('objects', `${at}: все значения нулевые, совпадение всегда будет 50\u00a0%.`, object.id);
     }
     const own = base.groups.find((g) => g.id === object.group);
     if (own && (object.values[own.attribute] ?? 0) < OWN_GROUP_LEVEL) {
       warning('objects', `${at}: атрибут своей группы выражен слабо (меньше ${OWN_GROUP_LEVEL}).`, object.id);
     }
-  }
+  });
 
   // Блоки и вопросы
   if (questions.length === 0) error('questions', 'Нет ни одного вопроса.');
@@ -190,7 +192,7 @@ export function validateBase(base: KnowledgeBase): Issue[] {
         if (!attributeIds.has(id)) {
           broken('questions', `${opt}: вес неизвестного атрибута «${id}».`, question.id);
         } else if (!Number.isInteger(value) || value < WEIGHT_RANGE.min || value > WEIGHT_RANGE.max) {
-          error('questions', `${opt}: вес атрибута «${id}» должен быть целым от ${WEIGHT_RANGE.min} до ${WEIGHT_RANGE.max}.`, question.id);
+          error('questions', `${opt}: вес атрибута ${attributeName(id)} должен быть целым от ${WEIGHT_RANGE.min} до ${WEIGHT_RANGE.max}.`, question.id);
         }
       }
       for (const [groupId, reason] of Object.entries(option.reasons ?? {})) {
@@ -207,7 +209,7 @@ export function validateBase(base: KnowledgeBase): Issue[] {
     });
     const usedByRules = base.rules.some((r) => r.if.some((c) => c.question === question.id));
     if (question.options.length >= 2 && !affects && !usedByRules && base.attributes.length > 0) {
-      warning('questions', `${at}: ответ ни на что не влияет: у вариантов одинаковые веса, и правил с этим вопросом нет.`, question.id);
+      warning('questions', `${at}: ответ ни на что не влияет: у вариантов одинаковые веса, и в условиях правил этого вопроса нет.`, question.id);
     }
   });
 
@@ -215,10 +217,16 @@ export function validateBase(base: KnowledgeBase): Issue[] {
   for (const id of new Set(repeated(base.rules.map((r) => r.id)))) broken('rules', `id правила «${id}» повторяется.`, id);
   const position = new Map(questions.map((q, i) => [q.id, i]));
   const questionById = new Map(questions.map((q) => [q.id, q]));
-  for (const rule of base.rules) {
-    const at = `Правило ${rule.title || rule.id}`;
-    if (!rule.title.trim()) warning('rules', `Правило ${rule.id}: нет обозначения.`, rule.id);
+  for (const title of new Set(repeated(base.rules.map((r) => r.title.trim()).filter(Boolean)))) {
+    warning('rules', `Обозначение ${title} повторяется: в объяснениях правила будет не различить.`);
+  }
+  base.rules.forEach((rule, index) => {
+    const at = rule.title.trim() ? `Правило ${rule.title}` : `Правило ${index + 1}`;
+    if (!rule.title.trim()) warning('rules', `${at}: нет обозначения.`, rule.id);
     if (rule.if.length === 0) error('rules', `${at}: нет условий.`, rule.id);
+    if (new Set(rule.if.map((c) => `${c.question}/${c.option}`)).size < rule.if.length) {
+      warning('rules', `${at}: одно и то же условие указано дважды.`, rule.id);
+    }
     for (const part of [...rule.if, rule.then]) {
       const question = questionById.get(part.question);
       if (!question) broken('rules', `${at}: нет вопроса «${part.question}».`, rule.id);
@@ -242,15 +250,21 @@ export function validateBase(base: KnowledgeBase): Issue[] {
     if (targetQuestion?.type === 'multiple' && targetOption && !targetOption.exclusive) {
       warning('rules', `${at}: в вопросе с несколькими ответами правило заменяет весь выбор одним вариантом. Обычно так выводят только «ничего из этого».`, rule.id);
     }
-  }
+  });
+  /** Условия без учёта порядка и повторов: так видно, что правила одинаковые. */
+  const conditionsKey = (rule: Rule) => [...new Set(rule.if.map((c) => `${c.question}/${c.option}`))].sort().join();
   base.rules.forEach((rule, index) => {
     for (const other of base.rules.slice(index + 1)) {
-      if (rule.then.question !== other.then.question || rule.then.option === other.then.option) continue;
+      if (rule.then.question !== other.then.question) continue;
+      if (rule.then.option === other.then.option) {
+        if (conditionsKey(rule) === conditionsKey(other)) warning('rules', `Правила ${ruleTitle(rule)} и ${ruleTitle(other)} одинаковые: второе ничего не добавляет.`, other.id);
+        continue;
+      }
       const exclusive = rule.if.some((a) =>
         other.if.some((b) => a.question === b.question && a.option !== b.option && questionById.get(a.question)?.type === 'single'),
       );
       if (!exclusive) {
-        warning('rules', `Правила ${rule.title} и ${other.title} могут сработать вместе и вывести разные значения. Сработает первое по порядку.`, other.id);
+        warning('rules', `Правила ${ruleTitle(rule)} и ${ruleTitle(other)} могут сработать вместе и вывести разные значения. Сработает первое по порядку.`, other.id);
       }
     }
   });
@@ -383,7 +397,7 @@ function answerProblems(base: KnowledgeBase, profile: TestProfile): string[] {
   const { answers: effective } = infer(base, profile.answers);
   questions.forEach((question, index) => {
     if (selectedOptions(question, effective).length === 0) {
-      problems.push(`нет ответа на вопрос ${index + 1} «${question.parameter}», и правило его не выводит`);
+      problems.push(`нет ответа на вопрос ${index + 1}${question.parameter ? ` «${question.parameter}»` : ''}, и правило его не выводит`);
     }
   });
   return problems;

@@ -1,12 +1,34 @@
-// Поля редактора. Изменения сохраняются сразу, поэтому значение в базу попадает при вводе,
-// а то, что сохранять нельзя (недопустимый адрес, не число), остаётся только в поле с пометкой об ошибке.
+// Поля редактора. Обычный текст попадает в базу при вводе. Число и адрес — когда человек уходит из поля: по дороге
+// к недопустимому 150 встречается допустимое 15, и сохранился бы этот обрывок. То, что сохранять нельзя,
+// остаётся только в поле с пометкой об ошибке, а в базе остаётся прежнее значение.
 
-import { useEffect, useState } from 'react';
-import type { ReactNode } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import type { MouseEvent, ReactNode } from 'react';
 import { Photo } from '../components/Photo.tsx';
 import { isSafeImagePosition, isSafeImageUrl, isSafeLinkUrl } from '../engine/images.ts';
+import { MAX_TEXT_LENGTH } from '../engine/parse.ts';
 import type { ImageCredit, ImageRef } from '../engine/types.ts';
 import type { Issue } from '../engine/validate.ts';
+import { refocus } from '../focus.ts';
+
+/**
+ * Сохраняет черновик поля, когда поле исчезает или закрывается вкладка: при переходе кнопкой браузера «Назад»
+ * и при закрытии вкладки событие ухода из поля может не прийти.
+ */
+function useCommitOnLeave(commit: () => void): void {
+  const latest = useRef(commit);
+  useEffect(() => {
+    latest.current = commit;
+  });
+  useEffect(() => {
+    const flush = () => latest.current();
+    window.addEventListener('pagehide', flush);
+    return () => {
+      window.removeEventListener('pagehide', flush);
+      flush();
+    };
+  }, []);
+}
 
 interface TextFieldProps {
   label: string;
@@ -24,9 +46,9 @@ export function TextField({ label, value, onChange, hint, placeholder, multiline
     <label className={className ? `field ${className}` : 'field'}>
       <span className="field__label">{label}</span>
       {multiline ? (
-        <textarea className="field__input field__input--area" rows={rows} value={value} placeholder={placeholder} onChange={(event) => onChange(event.target.value)} />
+        <textarea className="field__input field__input--area" rows={rows} value={value} placeholder={placeholder} maxLength={MAX_TEXT_LENGTH} onChange={(event) => onChange(event.target.value)} />
       ) : (
-        <input className="field__input" type="text" value={value} placeholder={placeholder} onChange={(event) => onChange(event.target.value)} />
+        <input className="field__input" type="text" value={value} placeholder={placeholder} maxLength={MAX_TEXT_LENGTH} onChange={(event) => onChange(event.target.value)} />
       )}
       {hint && <span className="field__hint">{hint}</span>}
     </label>
@@ -37,11 +59,13 @@ interface CheckedTextFieldProps extends Omit<TextFieldProps, 'multiline' | 'rows
   /** Можно ли сохранить такое значение. */
   check: (value: string) => boolean;
   errorText: string;
-  onBlur?: () => void;
 }
 
-/** Текстовое поле с проверкой: недопустимое значение не сохраняется, а поле показывает ошибку. */
-export function CheckedTextField({ label, value, onChange, check, errorText, hint, placeholder, className, onBlur }: CheckedTextFieldProps) {
+/**
+ * Текстовое поле с проверкой. Значение сохраняется, когда человек уходит из поля или нажимает Enter. Недопустимое
+ * не сохраняется: поле показывает его с ошибкой, чтобы длинный адрес можно было поправить, а не набирать заново.
+ */
+export function CheckedTextField({ label, value, onChange, check, errorText, hint, placeholder, className }: CheckedTextFieldProps) {
   const [draft, setDraft] = useState(value);
   const invalid = !check(draft);
 
@@ -49,6 +73,11 @@ export function CheckedTextField({ label, value, onChange, check, errorText, hin
   useEffect(() => {
     setDraft(value);
   }, [value]);
+
+  function commit() {
+    if (draft !== value && check(draft)) onChange(draft);
+  }
+  useCommitOnLeave(commit);
 
   return (
     <label className={className ? `field ${className}` : 'field'}>
@@ -58,12 +87,11 @@ export function CheckedTextField({ label, value, onChange, check, errorText, hin
         type="text"
         value={draft}
         placeholder={placeholder}
+        maxLength={MAX_TEXT_LENGTH}
         aria-invalid={invalid}
-        onBlur={onBlur}
-        onChange={(event) => {
-          setDraft(event.target.value);
-          if (check(event.target.value)) onChange(event.target.value);
-        }}
+        onBlur={commit}
+        onKeyDown={(event) => event.key === 'Enter' && commit()}
+        onChange={(event) => setDraft(event.target.value)}
       />
       {invalid ? <span className="field__error">{errorText}</span> : hint && <span className="field__hint">{hint}</span>}
     </label>
@@ -81,16 +109,25 @@ interface NumberFieldProps {
   className?: string;
 }
 
-/** Числовое поле: пока введено не подходящее значение, в базе остаётся прежнее. */
+/** Обычная запись числа, в том числе с запятой. 0x10 и 1e1 для человека не числа, хотя JavaScript их понимает. */
+function parseNumber(text: string): number {
+  return /^\s*-?(\d+[.,]?\d*|[.,]\d+)\s*$/.test(text) ? Number(text.trim().replace(',', '.')) : NaN;
+}
+
+/** Числовое поле: значение сохраняется, когда человек уходит из поля или нажимает Enter. Неподходящее откатывается к прежнему. */
 export function NumberField({ label, value, onChange, check, errorText, hint, className }: NumberFieldProps) {
-  const parse = (text: string) => (text.trim() === '' ? NaN : Number(text.replace(',', '.')));
   const [draft, setDraft] = useState(String(value));
-  const parsed = parse(draft);
+  const parsed = parseNumber(draft);
   const invalid = !Number.isFinite(parsed) || !check(parsed);
 
   useEffect(() => {
-    setDraft((current) => (parse(current) === value ? current : String(value)));
+    setDraft((current) => (parseNumber(current) === value ? current : String(value)));
   }, [value]);
+
+  function commit() {
+    if (!invalid && parsed !== value) onChange(parsed);
+  }
+  useCommitOnLeave(commit);
 
   return (
     <label className={className ? `field ${className}` : 'field'}>
@@ -101,12 +138,9 @@ export function NumberField({ label, value, onChange, check, errorText, hint, cl
         inputMode="decimal"
         value={draft}
         aria-invalid={invalid}
-        onBlur={() => invalid && setDraft(String(value))}
-        onChange={(event) => {
-          setDraft(event.target.value);
-          const next = parse(event.target.value);
-          if (Number.isFinite(next) && check(next)) onChange(next);
-        }}
+        onBlur={() => (invalid ? setDraft(String(value)) : commit())}
+        onKeyDown={(event) => event.key === 'Enter' && commit()}
+        onChange={(event) => setDraft(event.target.value)}
       />
       {invalid ? <span className="field__error">{errorText}</span> : hint && <span className="field__hint">{hint}</span>}
     </label>
@@ -164,6 +198,7 @@ export function ListField({ label, value, onChange, hint }: { label: string; val
         className="field__input field__input--area"
         rows={Math.max(3, draft.split('\n').length)}
         value={draft}
+        maxLength={MAX_TEXT_LENGTH}
         onChange={(event) => {
           setDraft(event.target.value);
           onChange(clean(event.target.value));
@@ -196,20 +231,42 @@ interface RowActionsProps {
   label: string;
   onUp?: () => void;
   onDown?: () => void;
-  onRemove?: () => void;
+  onRemove?: () => void | Promise<void>;
 }
 
-/** Кнопки «выше», «ниже», «удалить». Если действия нет, кнопка неактивна. */
+/**
+ * Кнопки «выше», «ниже», «удалить». Если действия нет, кнопка неактивна, но остаётся доступной с клавиатуры:
+ * иначе при переносе на край списка она потеряла бы фокус.
+ */
 export function RowActions({ label, onUp, onDown, onRemove }: RowActionsProps) {
+  // Строка могла переехать, а вопрос при переносе в соседний блок создаётся заново. Фокус остаётся на той же кнопке той же строки.
+  function move(event: MouseEvent<HTMLButtonElement>, action: (() => void) | undefined, name: 'up' | 'down') {
+    if (!action) return;
+    const button = event.currentTarget;
+    const rowId = button.closest('[id^="entity-"]')?.id;
+    action();
+    refocus(() => (button.isConnected ? button : document.getElementById(rowId ?? '')?.querySelector<HTMLElement>(`[data-action="${name}"]`)));
+  }
+
+  // Строка исчезла вместе с кнопкой: фокус идёт на такую же кнопку соседней строки, а если строк не осталось — на заголовок раздела.
+  async function remove(event: MouseEvent<HTMLButtonElement>) {
+    const button = event.currentTarget;
+    const row = button.closest('li, tr');
+    const neighbour = row?.nextElementSibling ?? row?.previousElementSibling;
+    const heading = button.closest('section')?.querySelector('h2');
+    await onRemove?.();
+    refocus(() => neighbour?.querySelector<HTMLElement>('[data-action="remove"]') ?? heading);
+  }
+
   return (
     <span className="row-actions">
-      <button type="button" className="icon-btn" aria-label={`Выше: ${label}`} title="Выше" disabled={!onUp} onClick={onUp}>
+      <button type="button" className="icon-btn" data-action="up" aria-label={`Выше: ${label}`} title="Выше" aria-disabled={!onUp} onClick={(event) => move(event, onUp, 'up')}>
         ↑
       </button>
-      <button type="button" className="icon-btn" aria-label={`Ниже: ${label}`} title="Ниже" disabled={!onDown} onClick={onDown}>
+      <button type="button" className="icon-btn" data-action="down" aria-label={`Ниже: ${label}`} title="Ниже" aria-disabled={!onDown} onClick={(event) => move(event, onDown, 'down')}>
         ↓
       </button>
-      <button type="button" className="icon-btn icon-btn--danger" aria-label={`Удалить: ${label}`} title="Удалить" disabled={!onRemove} onClick={onRemove}>
+      <button type="button" className="icon-btn icon-btn--danger" data-action="remove" aria-label={`Удалить: ${label}`} title="Удалить" onClick={remove}>
         ×
       </button>
     </span>
@@ -218,15 +275,12 @@ export function RowActions({ label, onUp, onDown, onRemove }: RowActionsProps) {
 
 /** Картинка в редакторе: только адрес, файлы в базу не встраиваются. Автор и лицензия необязательны. */
 export function ImageField({ label, image, onChange }: { label: string; image: ImageRef | undefined; onChange: (image: ImageRef | undefined) => void }) {
-  // Превью обновляется, когда адрес дописан: иначе браузер запрашивал бы каждую часть адреса.
-  const [previewUrl, setPreviewUrl] = useState(image?.url ?? '');
   const credit = image?.credit;
 
   /** Обычно адрес стирают, чтобы вставить новый, поэтому подпись и авторы остаются, пока они есть. */
   function setUrl(url: string) {
     const details = image?.alt || image?.position || image?.credit;
     onChange(url || details ? { ...image, url } : undefined);
-    if (!url) setPreviewUrl('');
   }
 
   function setCredit(field: keyof ImageCredit, value: string) {
@@ -243,17 +297,16 @@ export function ImageField({ label, image, onChange }: { label: string; image: I
     <fieldset className="image-field">
       <legend className="field__label">{label}</legend>
       <div className="image-field__main">
-        {previewUrl && <Photo image={{ url: previewUrl, alt: image?.alt, position: image?.position }} className="image-field__preview" decorative />}
+        {image?.url && <Photo image={image} className="image-field__preview" decorative />}
         <div className="image-field__fields">
           <CheckedTextField
             label="Адрес картинки"
             value={image?.url ?? ''}
             placeholder="https://… или images/photo.webp"
             check={isSafeImageUrl}
-            errorText="Допускаются только адреса http(s) и относительные пути."
+            errorText="Допускаются только адреса http(s) и относительные пути. В базе остался прежний адрес."
             hint="Файл в базу не встраивается: картинка должна быть доступна по ссылке."
             onChange={setUrl}
-            onBlur={() => setPreviewUrl(image?.url ?? '')}
           />
           {image && (
             <TextField
@@ -339,7 +392,9 @@ export function IssueList({ issues, onSelect }: { issues: Issue[]; onSelect?: (t
 export function SectionHead({ title, children }: { title: string; children?: ReactNode }) {
   return (
     <header className="editor-section__head">
-      <h2 className="editor-section__title">{title}</h2>
+      <h2 tabIndex={-1} className="editor-section__title">
+        {title}
+      </h2>
       {children && <p className="editor-section__lead">{children}</p>}
     </header>
   );

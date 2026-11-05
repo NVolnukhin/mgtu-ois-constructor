@@ -24,6 +24,12 @@ import type {
 
 export const DEFAULT_SETTINGS: Settings = { topCount: 5, closeGap: 10, weakPercent: 50 };
 
+/** Самый длинный допустимый текст: огромный абзац браузер раскладывает минутами, и вкладка не отвечает. */
+export const MAX_TEXT_LENGTH = 20_000;
+const MAX_ID_LENGTH = 200;
+/** Сообщение об ошибке цитирует чужие данные, поэтому его длина тоже ограничена. */
+const MAX_ERROR_LENGTH = 300;
+
 export type ParseResult = { ok: true; base: KnowledgeBase } | { ok: false; errors: string[] };
 
 type Json = Record<string, unknown>;
@@ -42,7 +48,11 @@ function prune<T extends object>(value: T): T {
 
 /** Ключи вроде constructor и __proto__ совпали бы со свойствами обычного объекта JavaScript. */
 function isSafeKey(key: string): boolean {
-  return key !== '' && !(key in Object.prototype);
+  return key !== '' && key.length <= MAX_ID_LENGTH && !(key in Object.prototype);
+}
+
+function tooLongText(value: string): string {
+  return `слишком длинный текст: ${value.length} символов, можно до ${MAX_TEXT_LENGTH}`;
 }
 
 export function parseBaseText(text: string): ParseResult {
@@ -64,12 +74,12 @@ export function parseBase(input: unknown): ParseResult {
     return { ok: false, errors: ['Файл создан более новой версией конструктора. Обновите страницу или попросите файл в старом формате.'] };
   }
   if (input.formatVersion !== BASE_FORMAT_VERSION) {
-    return { ok: false, errors: [`Неизвестная версия формата: ${String(input.formatVersion)}.`] };
+    return { ok: false, errors: [`Неизвестная версия формата. В поле formatVersion должно быть число ${BASE_FORMAT_VERSION}.`] };
   }
 
   const errors: string[] = [];
   const problem = (path: string, message: string) => {
-    errors.push(`${path}: ${message}`);
+    errors.push(`${path}: ${message}`.slice(0, MAX_ERROR_LENGTH));
   };
   /** Путь к полю для сообщения об ошибке; у полей верхнего уровня пути нет. */
   const field = (path: string, key: string) => (path ? `${path}.${key}` : key);
@@ -82,6 +92,10 @@ export function parseBase(input: unknown): ParseResult {
       problem(field(path, key), 'должна быть строка');
       return '';
     }
+    if (value.length > MAX_TEXT_LENGTH) {
+      problem(field(path, key), tooLongText(value));
+      return '';
+    }
     return value;
   };
   const optionalText = (source: Json, key: string, path: string): string | undefined =>
@@ -90,7 +104,7 @@ export function parseBase(input: unknown): ParseResult {
   const id = (source: Json, key: string, path: string): string => {
     const value = source[key];
     if (typeof value !== 'string' || !isSafeKey(value)) {
-      problem(field(path, key), 'нужен непустой id; имена вроде constructor не подходят');
+      problem(field(path, key), `нужен непустой id до ${MAX_ID_LENGTH} символов; имена вроде constructor не подходят`);
       return '';
     }
     return value;
@@ -136,6 +150,11 @@ export function parseBase(input: unknown): ParseResult {
       problem(field(path, key), 'должен быть список строк');
       return undefined;
     }
+    const long = values.find((value) => (value as string).length > MAX_TEXT_LENGTH);
+    if (long !== undefined) {
+      problem(field(path, key), tooLongText(long as string));
+      return undefined;
+    }
     return values as string[];
   };
 
@@ -162,8 +181,8 @@ export function parseBase(input: unknown): ParseResult {
       return undefined;
     }
     const entries = Object.entries(value).filter(([name, string]) => {
-      if (isSafeKey(name) && typeof string === 'string') return true;
-      problem(`${field(path, key)}.${name}`, 'должна быть строка');
+      if (isSafeKey(name) && typeof string === 'string' && string.length <= MAX_TEXT_LENGTH) return true;
+      problem(`${field(path, key)}.${name}`, typeof string === 'string' ? tooLongText(string) : 'должна быть строка');
       return false;
     });
     return Object.fromEntries(entries) as Record<string, string>;
@@ -197,7 +216,6 @@ export function parseBase(input: unknown): ParseResult {
       return undefined;
     }
     const url = text(value, 'url', at);
-    if (!url) return undefined;
     if (!isSafeImageUrl(url)) {
       problem(`${at}.url`, 'в адресе картинки допускаются только http(s) и относительные пути');
       return undefined;
@@ -222,7 +240,10 @@ export function parseBase(input: unknown): ParseResult {
         problem(`${at}.credit`, 'должен быть объект');
       }
     }
-    return prune({ url, alt: optionalText(value, 'alt', at), position, credit });
+    const alt = optionalText(value, 'alt', at);
+    // Адрес стирают, чтобы вставить новый: подпись и авторы при этом остаются. Совсем пустая картинка — это отсутствие картинки.
+    if (!url && !alt && !position && !(credit && Object.keys(credit).length > 0)) return undefined;
+    return prune({ url, alt, position, credit });
   };
 
   const condition = (source: Json, path: string): Condition => ({
@@ -330,7 +351,7 @@ export function parseBase(input: unknown): ParseResult {
     const answers: Answers = {};
     if (source.answers !== undefined && !isObject(source.answers)) problem(`${path}.answers`, 'должен быть объект');
     for (const [question, selected] of Object.entries(isObject(source.answers) ? source.answers : {})) {
-      if (isSafeKey(question) && Array.isArray(selected) && selected.every((option) => typeof option === 'string')) {
+      if (isSafeKey(question) && Array.isArray(selected) && selected.every((option) => typeof option === 'string' && isSafeKey(option))) {
         answers[question] = selected as string[];
       } else {
         problem(`${path}.answers.${question}`, 'должен быть список id вариантов');

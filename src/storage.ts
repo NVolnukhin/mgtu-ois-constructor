@@ -6,6 +6,7 @@
 import { useSyncExternalStore } from 'react';
 import exampleJson from '../content/example.json';
 import { parseBase } from './engine/parse.ts';
+import { BASE_FORMAT_VERSION } from './engine/types.ts';
 import type { Answers, KnowledgeBase } from './engine/types.ts';
 
 const PREFIX = 'mgtu-ois-constructor/';
@@ -166,12 +167,34 @@ export function createBase(base: KnowledgeBase): string {
   return record.id;
 }
 
+/**
+ * Собирает новое значение из старых частей там, где ничего не изменилось. Так React видит,
+ * какие строки большой таблицы перерисовывать не надо, а неизменившаяся база остаётся той же самой.
+ */
+function reuseUnchanged<T>(before: T, after: T): T {
+  if (before === after || typeof before !== 'object' || typeof after !== 'object' || before === null || after === null) return after;
+  if (Array.isArray(before) !== Array.isArray(after)) return after;
+  const keys = Object.keys(after);
+  const result = (Array.isArray(after) ? [] : {}) as Record<string, unknown>;
+  const sourceBefore = before as Record<string, unknown>;
+  const sourceAfter = after as Record<string, unknown>;
+  let same = keys.length === Object.keys(before).length;
+  for (const key of keys) {
+    result[key] = reuseUnchanged(sourceBefore[key], sourceAfter[key]);
+    if (result[key] !== sourceBefore[key]) same = false;
+  }
+  return same ? before : (result as T);
+}
+
 /** Меняет копию базы и сразу сохраняет её: редактор работает без кнопки «Сохранить». */
 export function updateBase(id: string, change: (draft: KnowledgeBase) => void): void {
   const current = state.records.find((record) => record.id === id);
   if (!current) return;
-  const base = structuredClone(current.base);
-  change(base);
+  const draft = structuredClone(current.base);
+  change(draft);
+  const base = reuseUnchanged(current.base, draft);
+  // Правка ничего не изменила: сохранять и сообщать о сохранении нечего.
+  if (base === current.base) return;
   // Запись, которую нельзя прочитать обратно, — это потерянная база. Лучше не сохранить одну правку.
   const check = parseBase(base);
   if (!check.ok) {
@@ -214,6 +237,15 @@ export function deleteBase(id: string): void {
 export function rawRecord(id: string): string | null {
   const key = `${BASE_PREFIX}${id}`;
   return pending.get(key) ?? readStored(key);
+}
+
+/** Запись не читается, потому что её сохранила более новая версия конструктора: тогда она не повреждена. */
+export function isFromNewerVersion(id: string): boolean {
+  try {
+    return JSON.parse(rawRecord(id) ?? '{}').base?.formatVersion > BASE_FORMAT_VERSION;
+  } catch {
+    return false;
+  }
 }
 
 // ---------- Подписка для React ----------
@@ -285,6 +317,16 @@ export function clearSession(id: string): void {
     // Если хранилище недоступно, в нём и так ничего не сохранилось.
   }
   settle();
+}
+
+/** Подписка на ответы этой базы: их изменила другая вкладка. */
+export function onSessionChange(id: string, listener: () => void): () => void {
+  const key = `${SESSION_PREFIX}${id}`;
+  const handle = (event: StorageEvent) => {
+    if (event.key === key || event.key === null) listener();
+  };
+  window.addEventListener('storage', handle);
+  return () => window.removeEventListener('storage', handle);
 }
 
 // ---------- Сколько места занято ----------

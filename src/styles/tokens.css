@@ -6,8 +6,11 @@
 :root {
   /* Цвета */
   --color-primary: #ff385c;
-  --color-primary-active: #e00b41;
+  /* Rausch #ff385c с белым текстом даёт контраст 3,5:1, для кнопок и подписей этого мало. Для них берём его тёмный вариант: 4,9:1. */
+  --color-primary-text: #e00b41;
+  --color-primary-active: #c20937;
   --color-primary-disabled: #ffd1da;
+  --color-on-primary-disabled: #b03a55;
   --color-ink: #222222;
   --color-body: #3f3f3f;
   --color-muted: #6a6a6a;
@@ -51,6 +54,8 @@
   --content-width-wide: 1120px;
   --gutter: 16px;
   --topbar-height: 64px;
+  /* Сколько сверху занимают закреплённые элементы. С предупреждением о сохранении больше: см. .banner. */
+  --sticky-offset: var(--topbar-height);
 }
 
 @media (min-width: 744px) {

@@ -17,6 +17,11 @@ import {
   moveItem,
   moveQuestion,
   newOption,
+  nextCondition,
+  profilesAnswering,
+  profilesExpectingGroup,
+  profilesExpectingObject,
+  profilesPhrase,
   removeAttribute,
   removeBlock,
   removeGroup,
@@ -26,9 +31,10 @@ import {
   setPhrase,
   setQuestionType,
   setWeight,
+  singleAnswerWarning,
 } from '../src/editor/ops.ts';
-import { parseBase, parseBaseText } from '../src/engine/parse.ts';
-import { askedQuestions, evaluate, infer, isComplete, liveRanking, maxScores, questionBounds } from '../src/engine/scoring.ts';
+import { MAX_TEXT_LENGTH, parseBase, parseBaseText } from '../src/engine/parse.ts';
+import { askedQuestions, evaluate, firstUnanswered, infer, isComplete, liveRanking, maxScores, questionBounds, resumeStep, ruleTitle } from '../src/engine/scoring.ts';
 import type { KnowledgeBase, Question, TestProfile } from '../src/engine/types.ts';
 import { checkRequirements, hasErrors, minAskedQuestions, parseForImport, runTestProfiles, validateBase } from '../src/engine/validate.ts';
 
@@ -469,8 +475,183 @@ const CASES: Record<string, () => void> = {
     addCondition(base, rule);
     deepStrictEqual(rule.if, [{ question: 'q1', option: 'a' }]);
     addCondition(base, rule);
-    strictEqual(rule.if.length, 2);
+    strictEqual(rule.if.length, 1, 'других вопросов раньше выводимого нет: повтор и противоречие не добавляются');
+    strictEqual(nextCondition(base, rule), null);
     assertImportable(base, 'после добавления условий');
+  },
+
+  'редактор: новое условие не повторяет прежние и стоит раньше вывода'() {
+    const base = smallBase();
+    const rule = { id: 'r', title: 'П1', if: [{ question: 'q1', option: 'a' }], then: { question: 'q4', option: 'a' }, note: '' };
+    base.rules = [rule];
+    addCondition(base, rule);
+    deepStrictEqual(rule.if[1], { question: 'q2', option: 'a' });
+    addCondition(base, rule);
+    deepStrictEqual(rule.if[2], { question: 'q3', option: 'a' });
+    strictEqual(nextCondition(base, rule), null, 'выводимый вопрос условием быть не может');
+    strictEqual(validateBase(base).some((issue) => issue.section === 'rules'), false, 'такое правило не вызывает замечаний');
+    base.blocks[0].questions[0].type = 'multiple';
+    deepStrictEqual(nextCondition(base, rule), { question: 'q1', option: 'b' }, 'у вопроса с несколькими ответами второй вариант подходит');
+  },
+
+  'редактор: новое правило старается не повторять прежнее'() {
+    const base = smallBase();
+    strictEqual(addRule(base)?.then.question, 'q2');
+    strictEqual(addRule(base)?.then.question, 'q3');
+    strictEqual(addRule(base)?.then.question, 'q4');
+    strictEqual(addRule(base)?.then.question, 'q2', 'все вопросы уже выводятся: берётся второй');
+  },
+
+  'проверка: повторы в правилах отмечаются, служебные id в сообщения не попадают'() {
+    const base = smallBase();
+    const rule = { id: 'r1', title: 'П1', if: [{ question: 'q1', option: 'a' }], then: { question: 'q2', option: 'b' }, note: '' };
+    base.rules = [rule, { ...rule, id: 'r2' }];
+    const messages = () => validateBase(base).map((issue) => issue.message);
+    strictEqual(messages().some((text) => text.includes('Обозначение П1 повторяется')), true);
+    strictEqual(messages().some((text) => text.includes('одинаковые')), true);
+    base.rules[0].if = [{ question: 'q1', option: 'a' }, { question: 'q1', option: 'a' }];
+    strictEqual(messages().some((text) => text.includes('указано дважды')), true);
+    strictEqual(messages().some((text) => text.includes('одинаковые')), true, 'повтор условия не мешает увидеть одинаковые правила');
+
+    const named = smallBase();
+    const attribute = addAttribute(named);
+    const object = addObject(named);
+    named.groups = [{ id: 'g-служебный', attribute: 'x', title: '', description: '' }];
+    named.rules = [{ id: 'r-служебный', title: ' ', if: [{ question: 'q1', option: 'a' }], then: { question: 'q2', option: 'b' }, note: '' }];
+    named.objects[0].values.x = 9;
+    named.blocks[0].questions[0].options[0].weights.x = 9;
+    const text = validateBase(named).map((issue) => issue.message).join('\n');
+    for (const id of [attribute.id, object.id, 'g-служебный', 'r-служебный', '«x»']) strictEqual(text.includes(id), false, `в сообщениях виден id ${id}`);
+    strictEqual(text.includes('Атрибут 3: нет названия'), true);
+    strictEqual(text.includes('Объект 3: нет названия'), true);
+    strictEqual(text.includes('Группа 1: нет названия'), true);
+    strictEqual(text.includes('Правило 1: нет обозначения'), true);
+    strictEqual(ruleTitle(named.rules[0]), 'без обозначения');
+  },
+
+  'проверка: заметка о вопросе без влияния не говорит, что правил нет, когда его выводит правило'() {
+    const base = smallBase();
+    base.blocks[0].questions[1].options.forEach((option) => (option.weights = {}));
+    base.rules = [{ id: 'r', title: 'П1', if: [{ question: 'q1', option: 'a' }], then: { question: 'q2', option: 'a' }, note: '' }];
+    const note = validateBase(base).find((issue) => issue.target === 'q2' && issue.message.includes('ни на что не влияет'));
+    strictEqual(note?.message.includes('в условиях правил этого вопроса нет'), true);
+  },
+
+  'итог групп: отрицательные веса не дают отрицательных процентов'() {
+    const base = smallBase();
+    base.groups = [
+      { id: 'gx', attribute: 'x', title: 'Икс', description: '' },
+      { id: 'gy', attribute: 'y', title: 'Игрек', description: '' },
+    ];
+    base.blocks[0].questions = [
+      {
+        ...question('q1'),
+        options: [
+          { id: 'a', text: 'Первый', weights: { x: -3, y: -2 } },
+          { id: 'b', text: 'Второй', weights: { x: 1, y: 1 } },
+        ],
+      },
+    ];
+    const verdict = evaluate(base, { q1: ['a'] }).verdict!;
+    strictEqual(verdict.ranking.every((score) => score.percent === 0), true, 'доля ниже нуля не опускается');
+    strictEqual(verdict.winner.group.id, 'gy', 'при нулевых долях впереди та, что ушла в минус меньше');
+    strictEqual(verdict.winner.points, -2, 'сами баллы не меняются: они видны в подробном расчёте');
+    strictEqual(verdict.isWeak, true);
+    strictEqual(evaluate(base, { q1: ['b'] }).verdict!.winner.percent, 100);
+    base.blocks[0].questions[0].options.forEach((option) => (option.weights = { x: -1, y: -2 }));
+    strictEqual(evaluate(base, { q1: ['a'] }).verdict!.winner.percent, 0, 'и когда максимум меньше нуля');
+    strictEqual(validateBase(base).some((issue) => issue.message.includes('ниже 0')), true, 'заметка об этом предупреждает');
+  },
+
+  'тест: после правки базы продолжается с первого вопроса без ответа'() {
+    const base = smallBase();
+    const answers = { q1: ['a'], q2: ['a'], q3: ['a'] };
+    strictEqual(firstUnanswered(base, answers), 3);
+    strictEqual(resumeStep(base, answers, 3), 3, 'обычное продолжение');
+    strictEqual(resumeStep(base, answers, 1), 1, 'вернулся назад, позади всё отвечено: остаётся где был');
+    // Удалили вопрос, на котором человек остановился раньше: номер шага теперь указывает на вопрос дальше.
+    const edited = structuredClone(base);
+    removeQuestion(edited, 'q1');
+    edited.blocks[0].questions.push(question('q5'));
+    strictEqual(resumeStep(edited, { q2: ['a'], q4: ['a'] }, 3), 1, 'пропущенный вопрос позади: возвращаемся к нему');
+    strictEqual(resumeStep(base, answers, 99), 3, 'номер за концом списка приводится к допустимому');
+    strictEqual(resumeStep(base, answers, -5), 0);
+  },
+
+  'тест: если вопросов дальше нет, продолжение остаётся на последнем заданном'() {
+    const base = smallBase();
+    base.rules = [{ id: 'r', title: 'П1', if: [{ question: 'q1', option: 'a' }], then: { question: 'q4', option: 'a' }, note: '' }];
+    const answers = { q1: ['a'], q2: ['a'], q3: ['a'] };
+    strictEqual(firstUnanswered(base, answers), null);
+    strictEqual(resumeStep(base, answers, 3), 2, 'последний вопрос выведен правилом');
+    strictEqual(resumeStep(emptyBase(), {}, 3), 0, 'и в пустой базе не падает');
+  },
+
+  'разбор файла: слишком длинные тексты отклоняются'() {
+    const long = 'щ'.repeat(MAX_TEXT_LENGTH + 1);
+    const rejected = (mutate: (json: any) => void, why: string) => {
+      const json = JSON.parse(JSON.stringify(smallBase()));
+      mutate(json);
+      const result = parseBase(json);
+      strictEqual(result.ok, false, why);
+      if (!result.ok) strictEqual(result.errors.every((error) => error.length <= 300), true, `${why}: длинный текст в сообщении`);
+    };
+    rejected((j) => (j.description = long), 'описание');
+    rejected((j) => (j.groups = [{ id: 'g', attribute: 'x', qualities: [long] }]), 'пункт списка');
+    rejected((j) => (j.blocks[0].questions[0].options[0].reasons = { g: long }), 'объяснение');
+    rejected((j) => (j.image = { url: long }), 'адрес картинки');
+    rejected((j) => (j.attributes[0].id = long), 'id');
+    rejected((j) => (j.objects[0].values = { [long]: 1 }), 'ключ значения');
+    rejected((j) => (j.testProfiles = [{ name: 'П', answers: { q1: [long] } }]), 'вариант в ответах профиля');
+    const fits = smallBase();
+    fits.description = 'щ'.repeat(MAX_TEXT_LENGTH);
+    strictEqual(parseBase(JSON.parse(JSON.stringify(fits))).ok, true, 'текст ровно на пределе проходит');
+    fits.title = 'щ'.repeat(MAX_TEXT_LENGTH);
+    strictEqual(parseBase(JSON.parse(JSON.stringify(copyOf(fits)))).ok, true, 'копия базы с самым длинным названием читается');
+  },
+
+  'разбор файла: подпись картинки без адреса не теряется'() {
+    const base = smallBase();
+    base.image = { url: '', alt: 'Подпись' };
+    assertImportable(base, 'адрес стёрт, подпись осталась');
+    base.image = { url: '', credit: { author: 'Автор' } };
+    assertImportable(base, 'адрес стёрт, автор остался');
+    const parsed = parseBase({ ...JSON.parse(JSON.stringify(smallBase())), image: { url: '', credit: {} } });
+    strictEqual(parsed.ok && 'image' in parsed.base, false, 'совсем пустая картинка — это отсутствие картинки');
+    const version = parseBase({ ...JSON.parse(JSON.stringify(smallBase())), formatVersion: '1' });
+    strictEqual(!version.ok && version.errors[0].includes('должно быть число 1'), true, 'версия строкой объясняется понятно');
+  },
+
+  'редактор: перед удалением видно, какие тестовые профили оно затронет'() {
+    const base = smallBase();
+    base.groups = [{ id: 'gx', attribute: 'x', title: 'Икс', description: '' }];
+    addProfile(base, { name: 'Аня', answers: { q1: ['a'] }, expectTop: ['ox'], expectGroup: ['gx'] });
+    addProfile(base, { name: 'Боря', answers: { q1: ['b'] }, expectWeak: true });
+    const names = (list: TestProfile[]) => list.map((profile) => profile.name);
+    deepStrictEqual(names(profilesExpectingObject(base.testProfiles, 'ox')), ['Аня']);
+    deepStrictEqual(names(profilesExpectingObject(base.testProfiles, 'oy')), []);
+    deepStrictEqual(names(profilesAnswering(base, 'q1')), ['Аня', 'Боря']);
+    deepStrictEqual(names(profilesAnswering(base, 'q1', 'b')), ['Боря']);
+    deepStrictEqual(names(profilesAnswering(base, 'q2')), []);
+    deepStrictEqual(names(profilesExpectingGroup(base, 'gx')), ['Аня', 'Боря'], 'группа последняя: ожидания об итоге пропадут тоже');
+    base.groups.push({ id: 'gy', attribute: 'y', title: 'Игрек', description: '' });
+    deepStrictEqual(names(profilesExpectingGroup(base, 'gx')), ['Аня']);
+    strictEqual(profilesPhrase([base.testProfiles[0]]), 'тестового профиля «Аня»');
+    const many = ['А', 'Б', 'В', 'Г', 'Д'].map((name) => ({ name, answers: {} }));
+    strictEqual(profilesPhrase(many), 'тестовых профилей «А», «Б», «В» и ещё 2');
+  },
+
+  'редактор: смена типа вопроса предупреждает только о том, что правда пропадёт'() {
+    const base = smallBase();
+    const question = base.blocks[0].questions[0];
+    strictEqual(singleAnswerWarning(base, question), '', 'терять нечего');
+    question.type = 'multiple';
+    question.options[0].exclusive = true;
+    strictEqual(singleAnswerWarning(base, question).includes('Ничего из этого'), true);
+    question.reasonTemplate = { g: 'Шаблон: {options}' };
+    strictEqual(singleAnswerWarning(base, question).includes('объяснения'), true);
+    addProfile(base, { name: 'Аня', answers: { [question.id]: ['a', 'b'] } });
+    strictEqual(singleAnswerWarning(base, question).includes('«Аня»'), true);
   },
 
   'редактор: профили не проверяют то, чего больше нет'() {

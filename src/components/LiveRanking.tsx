@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useBase } from '../base.ts';
 import type { ObjectScore } from '../engine/scoring.ts';
+import { plural } from '../plural.ts';
 import { RankingList } from './RankingList.tsx';
 
 interface LiveRankingProps {
@@ -35,7 +36,7 @@ export function LiveRanking({ ranking, previous, hasData }: LiveRankingProps) {
           <RankingList items={showAll ? ranking : ranking.slice(0, topCount)} previous={previousRanks} compact />
           {ranking.length > topCount && (
             <button type="button" className="text-button" aria-expanded={showAll} onClick={() => setShowAll(!showAll)}>
-              {showAll ? `Показать только ${topCount} лучших` : `Показать все ${ranking.length}`}
+              {showAll ? `Показать только ${plural(topCount, ['лучший', 'лучших', 'лучших'])}` : `Показать все ${ranking.length}`}
             </button>
           )}
         </>

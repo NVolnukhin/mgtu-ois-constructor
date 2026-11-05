@@ -1,13 +1,15 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { ChangeEvent } from 'react';
+import { baseTitle } from '../base.ts';
 import { copyOf, emptyBase } from '../editor/ops.ts';
 import { allQuestions, attributeRules } from '../engine/scoring.ts';
 import type { KnowledgeBase } from '../engine/types.ts';
 import { validateBase } from '../engine/validate.ts';
 import { downloadBase, downloadText, readBaseFile } from '../files.ts';
+import { refocus } from '../focus.ts';
 import { plural } from '../plural.ts';
 import { basePath, navigate } from '../router.ts';
-import { createBase, deleteBase, exampleRecord, rawRecord, storageUsage, useStore } from '../storage.ts';
+import { createBase, deleteBase, exampleRecord, isFromNewerVersion, rawRecord, storageUsage, useStore } from '../storage.ts';
 import type { BaseRecord } from '../storage.ts';
 import { useConfirm } from './ConfirmDialog.tsx';
 import { Photo } from './Photo.tsx';
@@ -87,7 +89,9 @@ export function HomeScreen() {
       </section>
 
       <section className="section">
-        <h2 className="section__title">Мои базы</h2>
+        <h2 id="my-bases" tabIndex={-1} className="section__title">
+          Мои базы
+        </h2>
         {records.length === 0 && broken.length === 0 ? (
           <p className="home__empty">Пока пусто. Создайте базу, импортируйте файл JSON или сделайте копию примера.</p>
         ) : (
@@ -102,7 +106,7 @@ export function HomeScreen() {
         )}
         <p className="note">
           Базы хранятся только в этом браузере: чтобы не потерять базу или передать её, скачайте JSON. Хранилище занято примерно на{' '}
-          {usage} %, на github.io оно общее для всех сайтов аккаунта.
+          {usage}&nbsp;%, на github.io оно общее для всех сайтов аккаунта.
         </p>
       </section>
 
@@ -128,6 +132,11 @@ function BaseFacts({ base }: { base: KnowledgeBase }) {
   );
 }
 
+/** Запись исчезла вместе с кнопкой удаления: фокус идёт на заголовок списка. */
+function focusBaseList(): void {
+  refocus(() => document.getElementById('my-bases'));
+}
+
 function BaseCard({ record }: { record: BaseRecord }) {
   const { id, base, updatedAt } = record;
   const errors = useMemo(() => validateBase(base).filter((issue) => issue.severity === 'error').length, [base]);
@@ -136,17 +145,19 @@ function BaseCard({ record }: { record: BaseRecord }) {
 
   async function remove() {
     const yes = await confirm({
-      title: `Удалить базу «${base.title || 'без названия'}»?`,
+      title: `Удалить базу «${base.title.trim() || 'без названия'}»?`,
       message: 'Вернуть её можно будет, только если есть файл JSON.',
       action: 'Удалить',
     });
-    if (yes) deleteBase(id);
+    if (!yes) return;
+    deleteBase(id);
+    focusBaseList();
   }
 
   return (
     <li className="base-card">
       <h3 className="base-card__title">
-        <a href={basePath(id)}>{base.title || 'Без названия'}</a>
+        <a href={basePath(id)}>{baseTitle(base)}</a>
       </h3>
       {base.description && <p className="base-card__text">{base.description}</p>}
       <BaseFacts base={base} />
@@ -177,6 +188,7 @@ function BaseCard({ record }: { record: BaseRecord }) {
 
 function BrokenCard({ id }: { id: string }) {
   const confirm = useConfirm();
+  const newer = isFromNewerVersion(id);
 
   async function remove() {
     const yes = await confirm({
@@ -184,14 +196,20 @@ function BrokenCard({ id }: { id: string }) {
       message: 'После удаления её уже не получится скачать и поправить вручную.',
       action: 'Удалить',
     });
-    if (yes) deleteBase(id);
+    if (!yes) return;
+    deleteBase(id);
+    focusBaseList();
   }
   return (
     <li className="base-card">
       <h3 className="base-card__title">Запись не читается</h3>
-      <p className="base-card__text">Данные этой базы в браузере повреждены, открыть её нельзя. Запись можно скачать как есть и попробовать поправить вручную.</p>
+      <p className="base-card__text">
+        {newer
+          ? 'Эта база сохранена более новой версией конструктора. Обновите страницу: если сайт уже обновился, база откроется.'
+          : 'Данные этой базы в браузере повреждены, открыть её нельзя. Запись можно скачать как есть и попробовать поправить вручную.'}
+      </p>
       <div className="base-card__actions">
-        <button type="button" className="text-button" onClick={() => downloadText(rawRecord(id) ?? '', 'Повреждённая запись.json')}>
+        <button type="button" className="text-button" onClick={() => downloadText(rawRecord(id) ?? '', newer ? 'Запись более новой версии.json' : 'Повреждённая запись.json')}>
           Скачать как есть
         </button>
         <button type="button" className="text-button" onClick={remove}>

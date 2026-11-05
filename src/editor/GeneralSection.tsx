@@ -7,7 +7,6 @@ export function GeneralSection({ update }: { update: UpdateBase }) {
   return (
     <section>
       <SectionHead title="Основное">Что видит человек на стартовом экране теста.</SectionHead>
-      <IssueList issues={issues.filter((issue) => issue.section === 'general')} />
       <div className="form-stack">
         <TextField label="Название" value={base.title} onChange={(value) => update((draft) => void (draft.title = value))} />
         <TextField
@@ -40,6 +39,7 @@ export function GeneralSection({ update }: { update: UpdateBase }) {
           }
         />
       </div>
+      <IssueList issues={issues.filter((issue) => issue.section === 'general')} />
     </section>
   );
 }

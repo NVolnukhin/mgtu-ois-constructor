@@ -9,19 +9,11 @@ import { SessionScreens } from './components/SessionScreens.tsx';
 import { EditorScreen } from './editor/EditorScreen.tsx';
 import { HOME_PATH, useRoute } from './router.ts';
 import type { BaseSection } from './router.ts';
+import { StorageBanner } from './components/StorageBanner.tsx';
 import { exampleRecord, EXAMPLE_ID, loadSession, useStore } from './storage.ts';
-import type { StorageProblem } from './storage.ts';
-
-const PROBLEM_TEXT: Record<StorageProblem, string> = {
-  quota:
-    'Не удалось сохранить: в хранилище браузера закончилось место. Изменения пока есть только в этой вкладке. Скачайте базу в JSON или удалите ненужные базы, и сохранение повторится.',
-  unavailable:
-    'Браузер не даёт сохранять данные (так бывает в приватном режиме). Изменения есть только в этой вкладке и пропадут при её закрытии: скачайте базу в JSON.',
-};
 
 export function App() {
   const route = useRoute();
-  const { problem } = useStore();
   const place = route.name === 'home' ? 'home' : `${route.id}/${route.section}/${route.tab ?? ''}`;
 
   // Сменился экран — прокручиваем страницу наверх.
@@ -31,11 +23,6 @@ export function App() {
 
   return (
     <>
-      {problem && (
-        <p className="banner" role="alert">
-          {PROBLEM_TEXT[problem]}
-        </p>
-      )}
       <ErrorBoundary resetKey={place}>
         {route.name === 'home' ? <HomeLayout /> : <BaseRoute id={route.id} section={route.section} tab={route.tab} />}
       </ErrorBoundary>
@@ -63,6 +50,7 @@ function HomeLayout() {
       <header className="topbar">
         <Brand title="Конструктор экспертных систем" />
       </header>
+      <StorageBanner />
       <main className="main main--wide">
         <HomeScreen />
       </main>
@@ -88,7 +76,7 @@ function BaseRoute({ id, section, tab }: BaseRouteProps) {
   const record = id === EXAMPLE_ID ? exampleRecord : records.find((item) => item.id === id);
   const compiled = useMemo(() => (record ? compileBase(record) : null), [record]);
 
-  if (!record || !compiled) return <BaseNotFound />;
+  if (!record || !compiled) return <BaseNotFound id={id} />;
   return (
     <BaseContext.Provider value={compiled}>
       {/* key: при любом изменении базы ход теста читается заново, номер вопроса приводится к допустимому. */}
@@ -107,7 +95,8 @@ function isSessionSection(section: BaseSection): boolean {
   return section !== 'edit' && section !== 'checks';
 }
 
-function BaseNotFound() {
+function BaseNotFound({ id }: { id: string }) {
+  const { broken } = useStore();
   useEffect(() => {
     document.title = 'База не найдена';
   }, []);
@@ -119,8 +108,9 @@ function BaseNotFound() {
       <main className="main">
         <h1 className="page__title">База не найдена</h1>
         <p className="page__lead">
-          Базы хранятся только в браузере, где их создали, поэтому ссылка из другого браузера здесь не откроется. Чтобы передать
-          базу, скачайте её файлом JSON и импортируйте на главной.
+          {broken.includes(id)
+            ? 'Запись этой базы есть в браузере, но прочитать её не удалось. На главной её можно скачать как есть или удалить.'
+            : 'В этом браузере такой базы нет. Возможно, её удалили, или ссылку открыли в другом браузере: базы хранятся только там, где их создали. Чтобы передать базу, скачайте её файлом JSON и импортируйте на главной.'}
         </p>
         <div className="actions">
           <a className="btn btn--primary" href={HOME_PATH}>

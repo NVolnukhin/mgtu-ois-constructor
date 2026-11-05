@@ -34,6 +34,7 @@ export function EditorScreen({ tab }: { tab?: string }) {
   const { records, problem } = useStore();
   const savedAt = records.find((record) => record.id === id)?.updatedAt;
   const titleRef = useRef<HTMLHeadingElement>(null);
+  const navRef = useRef<HTMLElement>(null);
   const update: UpdateBase = useCallback((change) => updateBase(id, change), [id]);
   const section = EDITOR_SECTIONS.find((item) => item.id === tab)?.id ?? 'general';
   const errors = issues.filter((issue) => issue.severity === 'error').length;
@@ -53,6 +54,16 @@ export function EditorScreen({ tab }: { tab?: string }) {
   useEffect(() => {
     titleRef.current?.focus({ preventScroll: true });
   }, []);
+
+  // На телефоне разделы — лента с прокруткой: выбранный должен быть виден, а не остаться за краем.
+  useEffect(() => {
+    const nav = navRef.current;
+    const link = nav?.querySelector('[aria-current="page"]');
+    if (!nav || !link) return;
+    const navBox = nav.getBoundingClientRect();
+    const linkBox = link.getBoundingClientRect();
+    nav.scrollBy({ left: linkBox.left - navBox.left - (navBox.width - linkBox.width) / 2 });
+  }, [section]);
 
   if (builtIn) {
     return (
@@ -79,12 +90,15 @@ export function EditorScreen({ tab }: { tab?: string }) {
           <h1 ref={titleRef} tabIndex={-1} className="page__title">
             Редактор
           </h1>
+          {/* Две отдельные строки: появление ошибки не меняет перенос текста, и форма под шапкой не прыгает. */}
           <p className="editor__status">
             {problem ? (
               <span className="editor__unsaved">Последние изменения не сохранены.</span>
             ) : (
               <>Изменения сохраняются сразу{savedAt ? `, последнее сохранение ${savedLabel(savedAt)}` : ''}.</>
-            )}{' '}
+            )}
+          </p>
+          <p className="editor__status">
             {errors > 0 ? (
               <a href={basePath(id, 'checks')}>В базе {plural(errors, ['ошибка', 'ошибки', 'ошибок'])}: тест пока не запускается</a>
             ) : (
@@ -105,7 +119,7 @@ export function EditorScreen({ tab }: { tab?: string }) {
       </header>
 
       <div className="editor__layout">
-        <nav className="editor__nav" aria-label="Разделы редактора">
+        <nav ref={navRef} className="editor__nav" aria-label="Разделы редактора">
           {EDITOR_SECTIONS.map((item) => {
             const failed = issues.some((issue) => issue.section === item.id && issue.severity === 'error');
             const count = counts[item.id];

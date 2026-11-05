@@ -1,10 +1,10 @@
 // Операции редактора над черновиком базы. Чистые функции без React: они меняют переданный черновик
 // и следят за целостностью, чтобы после удаления не оставалось ссылок в никуда.
 
-import { DEFAULT_SETTINGS } from '../engine/parse.ts';
+import { DEFAULT_SETTINGS, MAX_TEXT_LENGTH } from '../engine/parse.ts';
 import { allQuestions } from '../engine/scoring.ts';
 import { BASE_FORMAT, BASE_FORMAT_VERSION } from '../engine/types.ts';
-import type { Attribute, Block, Group, KnowledgeBase, Option, Question, RankedObject, Rule, TestProfile } from '../engine/types.ts';
+import type { Attribute, Block, Condition, Group, KnowledgeBase, Option, Question, RankedObject, Rule, TestProfile } from '../engine/types.ts';
 
 /** Новая база: пустая, с одним блоком, чтобы сразу можно было добавлять вопросы. */
 export function emptyBase(): KnowledgeBase {
@@ -27,7 +27,8 @@ export function emptyBase(): KnowledgeBase {
 
 /** Копия базы: новое название, остальное как было. */
 export function copyOf(base: KnowledgeBase): KnowledgeBase {
-  return { ...structuredClone(base), title: `${base.title} (копия)` };
+  const mark = ' (копия)';
+  return { ...structuredClone(base), title: `${base.title.slice(0, MAX_TEXT_LENGTH - mark.length)}${mark}` };
 }
 
 /**
@@ -41,6 +42,47 @@ function newId(prefix: string, items: { id: string }[]): string {
     id = `${prefix}${Math.random().toString(36).slice(2, 7)}`;
   } while (used.has(id));
   return id;
+}
+
+// ---------- Что затронет удаление: для предупреждения перед ним ----------
+
+/** Профили, которые ждут этот объект в тройке лидеров. */
+export function profilesExpectingObject(profiles: TestProfile[], id: string): TestProfile[] {
+  return profiles.filter((profile) => profile.expectTop?.includes(id));
+}
+
+/** Профили с ответом на этот вопрос или именно этим его вариантом. */
+export function profilesAnswering(base: KnowledgeBase, questionId: string, optionId?: string): TestProfile[] {
+  return base.testProfiles.filter((profile) => {
+    const selected = profile.answers[questionId];
+    return selected !== undefined && (optionId === undefined || selected.includes(optionId));
+  });
+}
+
+/** Профили, которые ждут этот итог. Если группа последняя, итога не будет совсем, и ожидания о нём пропадут тоже. */
+export function profilesExpectingGroup(base: KnowledgeBase, id: string): TestProfile[] {
+  const last = base.groups.length === 1 && base.groups[0].id === id;
+  return base.testProfiles.filter((profile) => profile.expectGroup?.includes(id) || (last && (profile.expectClose !== undefined || profile.expectWeak !== undefined)));
+}
+
+/** «тестового профиля «А»», «тестовых профилей «А», «Б» и ещё 3»: все имена в предупреждении не нужны. */
+export function profilesPhrase(profiles: TestProfile[]): string {
+  const shown = 3;
+  const names = profiles.slice(0, shown).map((profile) => `«${profile.name || 'без названия'}»`).join(', ');
+  const rest = profiles.length - shown;
+  return `${profiles.length === 1 ? 'тестового профиля' : 'тестовых профилей'} ${names}${rest > 0 ? ` и ещё ${rest}` : ''}`;
+}
+
+/** О чём предупредить, если у вопроса останется один ответ. Пустая строка — предупреждать не о чем. */
+export function singleAnswerWarning(base: KnowledgeBase, question: Question): string {
+  const several = base.testProfiles.filter((profile) => (profile.answers[question.id]?.length ?? 0) > 1);
+  return [
+    question.options.some((option) => option.exclusive) ? 'Отметка «Ничего из этого» пропадёт.' : '',
+    Object.keys(question.reasonTemplate ?? {}).length > 0 ? 'Общие объяснения итога пропадут.' : '',
+    several.length > 0 ? `Ответ ${profilesPhrase(several)} на этот вопрос придётся выбрать заново: сейчас в нём несколько вариантов.` : '',
+  ]
+    .filter(Boolean)
+    .join(' ');
 }
 
 /** Сдвигает элемент списка на одну позицию. За границы списка не выходит. */
@@ -237,7 +279,10 @@ export function setPhrase<K extends string>(holder: { [P in K]?: Record<string, 
 export function addRule(base: KnowledgeBase): Rule | null {
   const questions = allQuestions(base).filter((question) => question.options.length > 0);
   if (questions.length < 2) return null;
-  const [source, target] = questions;
+  const [source] = questions;
+  // Лучше вывести ещё не выводимый вопрос, чтобы новое правило сразу не повторяло прежнее.
+  const targeted = new Set(base.rules.map((rule) => rule.then.question));
+  const target = questions.slice(1).find((question) => !targeted.has(question.id)) ?? questions[1];
   const numbers = base.rules.map((rule) => Number(/^П(\d+)$/.exec(rule.title)?.[1] ?? 0));
   const rule: Rule = {
     id: newId('r', base.rules),
@@ -250,12 +295,23 @@ export function addRule(base: KnowledgeBase): Rule | null {
   return rule;
 }
 
-/** Новое условие: копия последнего, а если условий нет — первый вопрос с вариантами. */
+/** Какое условие ещё можно добавить: раньше выводимого вопроса, без повторов и противоречий. Если никакое — null. */
+export function nextCondition(base: KnowledgeBase, rule: Rule): Condition | null {
+  const questions = allQuestions(base);
+  const target = questions.findIndex((question) => question.id === rule.then.question);
+  for (const question of questions.slice(0, Math.max(0, target))) {
+    const used = rule.if.filter((condition) => condition.question === question.id);
+    // Два варианта вопроса с одним ответом выбраны быть не могут: такое правило никогда не сработает.
+    if (question.type === 'single' && used.length > 0) continue;
+    const option = question.options.find((item) => !used.some((condition) => condition.option === item.id));
+    if (option) return { question: question.id, option: option.id };
+  }
+  return null;
+}
+
 export function addCondition(base: KnowledgeBase, rule: Rule): void {
-  const last = rule.if.at(-1);
-  const question = allQuestions(base).find((item) => item.options.length > 0);
-  if (last) rule.if.push({ ...last });
-  else if (question) rule.if.push({ question: question.id, option: question.options[0].id });
+  const condition = nextCondition(base, rule);
+  if (condition) rule.if.push(condition);
 }
 
 // ---------- Тестовые профили ----------

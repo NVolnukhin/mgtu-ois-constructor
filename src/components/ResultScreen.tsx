@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useRef } from 'react';
 import { groupsTitle, percent, preferencePercent, useBase } from '../base.ts';
 import { addProfile } from '../editor/ops.ts';
-import { askedQuestions, attributeLabel, breakdown } from '../engine/scoring.ts';
+import { askedQuestions, attributeLabel, breakdown, ruleTitle } from '../engine/scoring.ts';
 import type { Evaluation, ObjectScore } from '../engine/scoring.ts';
 import type { Answers } from '../engine/types.ts';
+import { plural } from '../plural.ts';
 import { basePath, navigate } from '../router.ts';
 import { updateBase } from '../storage.ts';
 import { Photo } from './Photo.tsx';
@@ -62,18 +63,20 @@ export function ResultScreen({ evaluation, answers, onRestart }: ResultScreenPro
               <span className="score__unit">%</span>
             </p>
             <p className="score__caption">
-              {verdict ? `совпадение — ${verdict.winner.points} из ${verdict.winner.max} возможных баллов` : 'совпадение с профилем предпочтений'}
+              {verdict
+                ? `совпадение — ${Math.max(0, verdict.winner.points)} из ${plural(Math.max(0, verdict.winner.max), ['возможного балла', 'возможных баллов', 'возможных баллов'])}`
+                : 'совпадение с профилем предпочтений'}
             </p>
           </div>
 
           {verdict?.isWeak && (
             <p className="callout">
-              Результат пока выражен слабо: даже лучшая группа набрала меньше {base.settings.weakPercent} % баллов.
+              Результат пока выражен слабо: даже лучшая группа набрала меньше {base.settings.weakPercent}&nbsp;% баллов.
             </p>
           )}
           {verdict?.isClose && verdict.runnerUp && (
             <p className="callout">
-              Почти так же подходит «{verdict.runnerUp.group.title}» — {Math.round(verdict.runnerUp.percent)} %.
+              Почти так же подходит «{verdict.runnerUp.group.title}» — {Math.round(verdict.runnerUp.percent)}&nbsp;%.
             </p>
           )}
         </div>
@@ -83,7 +86,7 @@ export function ResultScreen({ evaluation, answers, onRestart }: ResultScreenPro
       <section className="section">
         <h2 className="section__title">Лучше всего подходят</h2>
         {leader.score < 0.5 && (
-          <p className="section__lead">Ни одна позиция рейтинга не набрала и 50 % совпадения: это лучшие из имеющихся.</p>
+          <p className="section__lead">Ни одна позиция рейтинга не набрала и 50&nbsp;% совпадения: это лучшие из имеющихся.</p>
         )}
         <ol className="top-cards">
           {objects.slice(0, 3).map((item) => (
@@ -108,8 +111,8 @@ export function ResultScreen({ evaluation, answers, onRestart }: ResultScreenPro
           <section className="section">
             <h2 className="section__title">Весь рейтинг</h2>
             <p className="section__lead">
-              Совпадение — это сходство профиля предпочтений с профилем объекта: 100 % — объект в точности соответствует ответам,
-              50 % — никак с ними не связан, ниже 50 % — скорее им противоречит.
+              Совпадение — это сходство профиля предпочтений с профилем объекта: 100&nbsp;% — объект в точности соответствует ответам,
+              50&nbsp;% — никак с ними не связан, ниже 50&nbsp;% — скорее им противоречит.
             </p>
             <RankingList items={objects} />
           </section>
@@ -153,9 +156,9 @@ export function ResultScreen({ evaluation, answers, onRestart }: ResultScreenPro
                     <li key={score.group.id} className={score === verdict.winner ? 'bar bar--winner' : 'bar'}>
                       <span className="bar__label">{score.group.title}</span>
                       <span className="bar__track" aria-hidden="true">
-                        <span className="bar__fill" style={{ width: `${Math.max(0, score.percent)}%` }} />
+                        <span className="bar__fill" style={{ width: `${score.percent}%` }} />
                       </span>
-                      <span className="bar__value">{Math.round(score.percent)} %</span>
+                      <span className="bar__value">{Math.round(score.percent)}&nbsp;%</span>
                     </li>
                   ))}
                 </ul>
@@ -167,12 +170,12 @@ export function ResultScreen({ evaluation, answers, onRestart }: ResultScreenPro
               <div className="details__text">
                 <p>
                   Каждый ответ срабатывает как правило «параметр + атрибут» и даёт «преимущество» атрибутам. Из сумм получается
-                  профиль предпочтений: по каждому из {base.attributes.length} атрибутов — где сумма лежит между наименьшей и
-                  наибольшей возможной, от 0 до 100 %.
+                  профиль предпочтений: по каждому из {plural(base.attributes.length, ['атрибута', 'атрибутов', 'атрибутов'])} — где сумма лежит между наименьшей и
+                  наибольшей возможной, от 0 до 100&nbsp;%.
                 </p>
                 <p>
-                  Профиль сравнивается с атрибутами каждого из {base.objects.length} объектов (косинусная мера сходства с учётом
-                  важности атрибутов) и переводится в совпадение от 0 до 100 %: 50 % — объект не связан с ответами. Так получается
+                  Профиль сравнивается с атрибутами каждого из {plural(base.objects.length, ['объекта', 'объектов', 'объектов'])} (косинусная мера сходства с учётом
+                  важности атрибутов) и переводится в совпадение от 0 до 100&nbsp;%: 50&nbsp;% — объект не связан с ответами. Так получается
                   рейтинг.
                   {verdict && ` Итог — это группа, атрибут которой набрал самую большую долю от возможных баллов.`}
                 </p>
@@ -188,7 +191,7 @@ export function ResultScreen({ evaluation, answers, onRestart }: ResultScreenPro
                     <li key={question.id} className="breakdown__item">
                       <p className="breakdown__question">
                         {i + 1}. {question.parameter}
-                        {rule && <span className="breakdown__rule"> · выведено правилом {rule.title}</span>}
+                        {rule && <span className="breakdown__rule"> · выведено правилом {ruleTitle(rule)}</span>}
                         {fired.length > 0 && (
                           <span className="breakdown__rule">
                             {' '}

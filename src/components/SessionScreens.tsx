@@ -1,9 +1,10 @@
 import { useEffect, useMemo } from 'react';
 import { testPath, useBase } from '../base.ts';
-import { askedQuestions, evaluate, infer, isComplete, liveRanking, selectedOptions } from '../engine/scoring.ts';
+import { askedQuestions, evaluate, firstUnanswered, infer, isComplete, liveRanking, nearestAsked, resumeStep, selectedOptions } from '../engine/scoring.ts';
+import type { Step } from '../base.ts';
 import { basePath, navigate } from '../router.ts';
 import type { BaseSection } from '../router.ts';
-import { firstUnanswered, nearestAsked, useQuizState } from '../useQuizState.ts';
+import { useQuizState } from '../useQuizState.ts';
 import { BaseLayout } from './BaseLayout.tsx';
 import { CreditsScreen } from './CreditsScreen.tsx';
 import { KnowledgeBaseScreen } from './KnowledgeBaseScreen.tsx';
@@ -21,7 +22,10 @@ export function SessionScreens({ section }: { section: BaseSection }) {
   const { step, answers } = state;
 
   const complete = useMemo(() => isComplete(base, answers), [base, answers]);
-  const answered = steps.filter(({ question }) => selectedOptions(question, answers).length > 0).length;
+  const answered = useMemo(() => {
+    const { answers: effective } = infer(base, answers);
+    return steps.filter(({ question }) => selectedOptions(question, effective).length > 0).length;
+  }, [base, steps, answers]);
   const returnPath = testPath(compiled, answers);
 
   // Тест не открывается, если в базе есть ошибки; результат — пока есть неотвеченные вопросы.
@@ -49,27 +53,34 @@ export function SessionScreens({ section }: { section: BaseSection }) {
     // Вопросы между предыдущим заданным и текущим, которые вывели правила.
     const previousAsked = [...asked].reverse().find((q) => steps.find((s) => s.question === q)!.index < step);
     const from = previousAsked ? steps.find((s) => s.question === previousAsked)!.index + 1 : 0;
-    const skipped: SkippedQuestion[] = steps.slice(from, step).flatMap(({ question }) => {
-      const rule = inferred.get(question.id);
-      const option = selectedOptions(question, effective)[0];
-      return rule && option ? [{ question, rule, option }] : [];
-    });
-    const progress = base.blocks.map((block, blockIndex) => {
+    const skippedAmong = (range: Step[]): SkippedQuestion[] =>
+      range.flatMap(({ question }) => {
+        const rule = inferred.get(question.id);
+        const option = selectedOptions(question, effective)[0];
+        return rule && option ? [{ question, rule, option }] : [];
+      });
+    // Блоки, где что-то будет спрошено: пустые и полностью выведенные правилами человек не проходит.
+    const askedBlocks = base.blocks.filter((block) => block.questions.some((q) => asked.includes(q)));
+    const blockPosition = askedBlocks.indexOf(current.block);
+    const progress = askedBlocks.map((block, index) => {
+      if (index !== blockPosition) return index < blockPosition ? 1 : 0;
       const inBlock = asked.filter((q) => block.questions.includes(q));
-      if (blockIndex < current.blockIndex) return 1;
-      if (blockIndex > current.blockIndex || inBlock.length === 0) return 0;
       return (inBlock.indexOf(current.question) + 1) / inBlock.length;
     });
-    const missing = firstUnanswered(compiled, answers);
+    const missing = firstUnanswered(base, answers);
+    const lastAsked = nearestAsked(base, step + 1, 1, answers) === null;
     return {
       current,
       position: asked.indexOf(current.question) + 1,
       total: asked.length,
       // Дальше вопросов нет, и неотвеченных позади тоже: следующий шаг — результат.
-      finishing: nearestAsked(compiled, step + 1, 1, answers) === null && (missing === null || missing === step),
+      finishing: lastAsked && (missing === null || missing === step),
+      blockNumber: blockPosition + 1,
       // Первый задаваемый вопрос блока: здесь показывается описание блока.
       blockStart: asked.find((q) => current.block.questions.includes(q)) === current.question,
-      skipped,
+      skipped: skippedAmong(steps.slice(from, step)),
+      // После последнего заданного вопроса плашку показать негде, поэтому она видна прямо на нём.
+      skippedAfter: lastAsked ? skippedAmong(steps.slice(step + 1)) : [],
       progress,
       ranking: liveRanking(base, answers),
       // До первого ответа рейтинга ещё не было — сдвигать места не от чего.
@@ -78,7 +89,7 @@ export function SessionScreens({ section }: { section: BaseSection }) {
         : null,
       hasData: Object.values(effective).some((ids) => ids.length > 0),
     };
-  }, [shown, step, compiled, base, steps, answers]);
+  }, [shown, step, base, steps, answers]);
 
   function start() {
     dispatch({ type: 'reset' });
@@ -86,20 +97,18 @@ export function SessionScreens({ section }: { section: BaseSection }) {
   }
 
   function resume() {
-    const missing = firstUnanswered(compiled, answers);
-    const target = missing !== null && missing < step ? missing : (nearestAsked(compiled, step, 1, answers) ?? step);
-    dispatch({ type: 'goto', step: target });
+    dispatch({ type: 'goto', step: resumeStep(base, answers, step) });
     navigate(basePath(id, 'test'));
   }
 
   function next() {
-    const target = nearestAsked(compiled, step + 1, 1, answers) ?? firstUnanswered(compiled, answers);
+    const target = nearestAsked(base, step + 1, 1, answers) ?? firstUnanswered(base, answers);
     if (target === null) navigate(basePath(id, 'result'));
     else dispatch({ type: 'goto', step: target });
   }
 
   function back() {
-    const target = nearestAsked(compiled, step - 1, -1, answers);
+    const target = nearestAsked(base, step - 1, -1, answers);
     if (target === null) navigate(basePath(id));
     else dispatch({ type: 'goto', step: target });
   }
@@ -117,8 +126,10 @@ export function SessionScreens({ section }: { section: BaseSection }) {
           total={quizView.total}
           finishing={quizView.finishing}
           blockStart={quizView.blockStart}
+          blockNumber={quizView.blockNumber}
           progress={quizView.progress}
           skipped={quizView.skipped}
+          skippedAfter={quizView.skippedAfter}
           ranking={quizView.ranking}
           previousRanking={quizView.previousRanking}
           hasData={quizView.hasData}

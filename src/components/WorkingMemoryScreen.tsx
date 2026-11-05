@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useRef } from 'react';
 import { preferencePercent, useBase } from '../base.ts';
-import { buildProfile, infer, rankObjects, selectedOptions } from '../engine/scoring.ts';
+import { buildProfile, infer, rankObjects, ruleTitle, selectedOptions } from '../engine/scoring.ts';
 import type { Answers } from '../engine/types.ts';
+import { plural } from '../plural.ts';
 import { useConfirm } from './ConfirmDialog.tsx';
 import { RankingList } from './RankingList.tsx';
 
@@ -32,7 +33,10 @@ export function WorkingMemoryScreen({ answers, returnPath, onReset }: WorkingMem
     titleRef.current?.focus({ preventScroll: true });
   }, []);
 
+  const empty = Object.keys(answers).length === 0;
+
   async function reset() {
+    if (empty) return;
     const yes = await confirm({ title: 'Очистить рабочую базу данных?', message: 'Все ответы будут удалены.', action: 'Очистить' });
     if (yes) onReset();
   }
@@ -45,7 +49,7 @@ export function WorkingMemoryScreen({ answers, returnPath, onReset }: WorkingMem
       <p className="page__lead">
         Факты текущего сеанса: параметры, полученные от пользователя и выведенные правилами «параметр + параметр»,
         сработавшие правила «параметр + атрибут» и профиль предпочтений, который из них получается. Хранятся в браузере
-        (localStorage), у каждой базы свои. Сейчас известно {filled} из {steps.length} параметров.
+        (localStorage), у каждой базы свои. Сейчас известно {filled} из {plural(steps.length, ['параметра', 'параметров', 'параметров'])}.
       </p>
 
       <section className="section">
@@ -72,7 +76,7 @@ export function WorkingMemoryScreen({ answers, returnPath, onReset }: WorkingMem
                       {question.parameter}
                     </th>
                     <td>{chosen.length > 0 ? chosen.map((option) => option.text).join('; ') : '—'}</td>
-                    <td className="wm__source">{rule ? `Правило ${rule.title}` : chosen.length > 0 ? 'Ответ пользователя' : 'Ещё не получен'}</td>
+                    <td className="wm__source">{rule ? `Правило ${ruleTitle(rule)}` : chosen.length > 0 ? 'Ответ пользователя' : 'Ещё не получен'}</td>
                     <td className="wm__source">
                       {chosen.flatMap((option) => attributeRuleOf(question.id, option.id)?.title ?? []).join(', ') || '—'}
                     </td>
@@ -87,8 +91,8 @@ export function WorkingMemoryScreen({ answers, returnPath, onReset }: WorkingMem
       <section className="section">
         <h2 className="section__title">Профиль предпочтений</h2>
         <p className="section__lead">
-          Сумма баллов по атрибуту и где она лежит между наименьшей и наибольшей возможной: 0 % — все ответы против
-          атрибута, 50 % — поровну, 100 % — все за.
+          Сумма баллов по атрибуту и где она лежит между наименьшей и наибольшей возможной: 0&nbsp;% — все ответы против
+          атрибута, 50&nbsp;% — поровну, 100&nbsp;% — все за.
         </p>
         <div className="table-scroll">
           <table className="kb-table kb-table--wide profile">
@@ -139,7 +143,8 @@ export function WorkingMemoryScreen({ answers, returnPath, onReset }: WorkingMem
         <a className="btn btn--secondary" href={returnPath}>
           Вернуться
         </a>
-        <button type="button" className="btn btn--ghost" onClick={reset} disabled={Object.keys(answers).length === 0}>
+        {/* Неактивная кнопка остаётся в обходе с клавиатуры: иначе после очистки фокус потерялся бы. */}
+        <button type="button" className="btn btn--ghost" onClick={reset} aria-disabled={empty}>
           Очистить рабочую базу данных
         </button>
       </div>
