@@ -21,6 +21,10 @@ interface QuestionScreenProps {
   position: number;
   /** Сколько вопросов задаётся с учётом правил. */
   total: number;
+  /** Это последний шаг: дальше результат. */
+  finishing: boolean;
+  /** Первый задаваемый вопрос блока: показать описание блока. */
+  blockStart: boolean;
   /** Доля пройденного по каждому блоку, от 0 до 1. */
   progress: number[];
   /** Вопросы перед этим, которые не задавались: их значение вывели правила. */
@@ -36,7 +40,7 @@ interface QuestionScreenProps {
 
 export function QuestionScreen(props: QuestionScreenProps) {
   const { base, steps } = useBase();
-  const { step, selected, position, total, progress, skipped, ranking, previousRanking, hasData } = props;
+  const { step, selected, position, total, finishing, blockStart, progress, skipped, ranking, previousRanking, hasData } = props;
   const { question, block, blockIndex, index } = step;
   const titleRef = useRef<HTMLHeadingElement>(null);
   const inputType = question.type === 'single' ? 'radio' : 'checkbox';
@@ -90,6 +94,8 @@ export function QuestionScreen(props: QuestionScreenProps) {
           </div>
         </div>
 
+        {blockStart && block.description && <p className="question__block">{block.description}</p>}
+
         {skipped.map(({ question: skippedQuestion, rule, option }) => (
           <p key={skippedQuestion.id} className="notice">
             <span className="notice__label">Правило {rule.title}</span>
@@ -138,7 +144,7 @@ export function QuestionScreen(props: QuestionScreenProps) {
           Назад
         </button>
         <button type="submit" className="btn btn--primary navbar__next" disabled={selected.length === 0}>
-          {position === total ? 'Узнать результат' : 'Далее'}
+          {finishing ? 'Узнать результат' : 'Далее'}
         </button>
       </div>
     </form>

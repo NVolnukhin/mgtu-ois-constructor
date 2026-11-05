@@ -26,6 +26,8 @@ export interface Issue {
 export const WEIGHT_RANGE = { min: -3, max: 3 };
 /** Шкала выраженности атрибута у объекта. */
 export const VALUE_RANGE = { min: 0, max: 3 };
+/** Наибольшая важность атрибута. Слишком большое число переполнило бы косинусную меру. */
+export const IMPORTANCE_MAX = 100;
 /** Минимальная выраженность атрибута своей группы у объекта: слабее — повод пересмотреть группу или значения. */
 const OWN_GROUP_LEVEL = 2;
 
@@ -71,11 +73,16 @@ export function validateBase(base: KnowledgeBase): Issue[] {
 
   // Атрибуты
   if (base.attributes.length === 0) error('attributes', 'Нет ни одного атрибута: не с чем сравнивать объекты.');
+  else if (base.attributes.every((attribute) => attribute.importance === 0)) {
+    error('attributes', 'У всех атрибутов важность 0: рейтинг не работает, совпадение всегда будет 50 %.');
+  }
   for (const id of new Set(repeated(base.attributes.map((a) => a.id)))) broken('attributes', `id атрибута «${id}» повторяется.`, id);
   for (const attribute of base.attributes) {
     const at = `Атрибут «${attribute.title || attribute.id}»`;
     if (!attribute.title.trim()) error('attributes', `Атрибут ${attribute.id}: нет названия.`, attribute.id);
-    if (!(attribute.importance >= 0)) error('attributes', `${at}: важность не может быть отрицательной.`, attribute.id);
+    if (!(attribute.importance >= 0 && attribute.importance <= IMPORTANCE_MAX)) {
+      error('attributes', `${at}: важность должна быть от 0 до ${IMPORTANCE_MAX}.`, attribute.id);
+    }
     if (base.objects.length > 0 && !base.objects.some((o) => (o.values[attribute.id] ?? 0) > 0)) {
       warning('attributes', `${at}: он не выражен ни у одного объекта и не влияет на рейтинг.`, attribute.id);
     }
@@ -248,6 +255,28 @@ export function validateBase(base: KnowledgeBase): Issue[] {
     }
   });
 
+  // Тестовые профили: удаление в редакторе чистит их само, поэтому ссылка в никуда бывает только в чужом файле.
+  const objectIds = new Set(base.objects.map((o) => o.id));
+  for (const profile of base.testProfiles) {
+    const at = `Профиль «${profile.name || 'без названия'}»`;
+    for (const [questionId, selected] of Object.entries(profile.answers)) {
+      const question = questionById.get(questionId);
+      if (!question) {
+        broken('general', `${at}: ответ на неизвестный вопрос «${questionId}».`);
+        continue;
+      }
+      for (const optionId of selected) {
+        if (!question.options.some((o) => o.id === optionId)) broken('general', `${at}: у вопроса «${question.parameter}» нет варианта «${optionId}».`);
+      }
+    }
+    for (const id of profile.expectGroup ?? []) {
+      if (!groupIds.has(id)) broken('general', `${at}: ожидается неизвестная группа «${id}».`);
+    }
+    for (const id of profile.expectTop ?? []) {
+      if (!objectIds.has(id)) broken('general', `${at}: ожидается неизвестный объект «${id}».`);
+    }
+  }
+
   return issues;
 }
 
@@ -380,8 +409,8 @@ export function runTestProfiles(base: KnowledgeBase): ProfileResult[] {
       if (profile.expectWeak !== undefined && profile.expectWeak !== verdict.isWeak) {
         problems.push(profile.expectWeak ? 'итог должен быть слабо выраженным' : 'итог должен быть выраженным');
       }
-    } else if (profile.expectGroup?.length) {
-      problems.push('ожидали группу, но в базе нет групп');
+    } else if (profile.expectGroup?.length || profile.expectClose !== undefined || profile.expectWeak !== undefined) {
+      problems.push('заданы ожидания об итоге, но в базе нет групп');
     }
     const top3 = evaluation.objects.slice(0, 3).map((item) => item.object.id);
     if (profile.expectTop && profile.expectTop.length > 0 && !profile.expectTop.some((id) => top3.includes(id))) {

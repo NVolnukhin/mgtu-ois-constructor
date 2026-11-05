@@ -171,6 +171,12 @@ export function updateBase(id: string, change: (draft: KnowledgeBase) => void): 
   if (!current) return;
   const base = structuredClone(current.base);
   change(base);
+  // Запись, которую нельзя прочитать обратно, — это потерянная база. Лучше не сохранить одну правку.
+  const check = parseBase(base);
+  if (!check.ok) {
+    console.error('Правка не сохранена: после неё база не читается.', check.errors);
+    return;
+  }
   const record: BaseRecord = { ...current, base, updatedAt: Date.now() };
   const key = `${BASE_PREFIX}${id}`;
   const raw = encode(record);
@@ -218,9 +224,12 @@ export function useStore(): StoreState {
 }
 
 if (typeof window !== 'undefined') {
-  // Другая вкладка изменила базы — показываем их здесь. Несохранённое здесь остаётся как есть.
+  // Другая вкладка изменила базы — показываем их здесь. Несохранённое здесь остаётся как есть,
+  // а если там освободилось место, записываем его.
   window.addEventListener('storage', (event) => {
-    if (event.key === null || event.key.startsWith(BASE_PREFIX)) publish(readAll(state.problem));
+    const problem = pending.size > 0 ? flush() : state.problem;
+    if (event.key === null || event.key.startsWith(BASE_PREFIX)) publish(readAll(problem));
+    else if (problem !== state.problem) publish({ ...state, problem });
   });
   // Несохранённые данные есть только в памяти: перед закрытием вкладки браузер переспросит.
   window.addEventListener('beforeunload', (event) => {
@@ -230,11 +239,20 @@ if (typeof window !== 'undefined') {
 
 // ---------- Ответы ----------
 
+function isAnswers(value: unknown): value is Answers {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    !Array.isArray(value) &&
+    Object.values(value).every((selected) => Array.isArray(selected) && selected.every((id) => typeof id === 'string'))
+  );
+}
+
 export function loadSession(id: string): StoredSession | null {
   const key = `${SESSION_PREFIX}${id}`;
   try {
     const saved = JSON.parse(pending.get(key) ?? readStored(key) ?? 'null');
-    if (saved && typeof saved.step === 'number' && saved.answers && typeof saved.answers === 'object') {
+    if (saved && Number.isInteger(saved.step) && isAnswers(saved.answers)) {
       return { step: saved.step, answers: saved.answers };
     }
   } catch {

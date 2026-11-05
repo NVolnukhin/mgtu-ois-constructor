@@ -30,12 +30,17 @@ export function copyOf(base: KnowledgeBase): KnowledgeBase {
   return { ...structuredClone(base), title: `${base.title} (копия)` };
 }
 
-/** Первый свободный id вида prefix1, prefix2, … */
-function nextId(prefix: string, items: { id: string }[]): string {
+/**
+ * Новый id: префикс и случайный хвост. Освободившиеся id не используются снова: иначе новый вопрос
+ * получил бы сохранённый ответ на удалённый, хотя его никто не задавал.
+ */
+function newId(prefix: string, items: { id: string }[]): string {
   const used = new Set(items.map((item) => item.id));
-  let number = items.length + 1;
-  while (used.has(`${prefix}${number}`)) number++;
-  return `${prefix}${number}`;
+  let id: string;
+  do {
+    id = `${prefix}${Math.random().toString(36).slice(2, 7)}`;
+  } while (used.has(id));
+  return id;
 }
 
 /** Сдвигает элемент списка на одну позицию. За границы списка не выходит. */
@@ -48,7 +53,7 @@ export function moveItem<T>(list: T[], index: number, direction: -1 | 1): void {
 // ---------- Атрибуты ----------
 
 export function addAttribute(base: KnowledgeBase, title = ''): Attribute {
-  const attribute: Attribute = { id: nextId('a', base.attributes), title, short: '', description: '', importance: 1 };
+  const attribute: Attribute = { id: newId('a', base.attributes), title, short: '', description: '', importance: 1 };
   base.attributes.push(attribute);
   return attribute;
 }
@@ -75,7 +80,7 @@ export function removeAttribute(base: KnowledgeBase, id: string): void {
 
 /** Группа связана с атрибутом. Если свободного атрибута нет, он создаётся вместе с группой. */
 export function addGroup(base: KnowledgeBase): Group {
-  const id = nextId('g', base.groups);
+  const id = newId('g', base.groups);
   const title = `Группа ${base.groups.length + 1}`;
   const free = base.attributes.find((attribute) => !base.groups.some((group) => group.attribute === attribute.id));
   const attribute = free ?? addAttribute(base, title);
@@ -97,7 +102,13 @@ export function removeGroup(base: KnowledgeBase, id: string): void {
     for (const option of question.options) deleteKey(option, 'reasons', id);
   }
   for (const profile of base.testProfiles) {
-    if (profile.expectGroup) profile.expectGroup = profile.expectGroup.filter((groupId) => groupId !== id);
+    profile.expectGroup = profile.expectGroup?.filter((groupId) => groupId !== id);
+    if (!profile.expectGroup?.length) delete profile.expectGroup;
+    // Групп не осталось — итога нет, и ожидать от него нечего.
+    if (base.groups.length === 0) {
+      delete profile.expectClose;
+      delete profile.expectWeak;
+    }
   }
 }
 
@@ -112,7 +123,7 @@ function deleteKey<K extends string>(holder: { [P in K]?: Record<string, unknown
 // ---------- Объекты ----------
 
 export function addObject(base: KnowledgeBase): RankedObject {
-  const object: RankedObject = { id: nextId('o', base.objects), title: '', description: '', values: {} };
+  const object: RankedObject = { id: newId('o', base.objects), title: '', description: '', values: {} };
   base.objects.push(object);
   return object;
 }
@@ -120,14 +131,15 @@ export function addObject(base: KnowledgeBase): RankedObject {
 export function removeObject(base: KnowledgeBase, id: string): void {
   base.objects = base.objects.filter((object) => object.id !== id);
   for (const profile of base.testProfiles) {
-    if (profile.expectTop) profile.expectTop = profile.expectTop.filter((objectId) => objectId !== id);
+    profile.expectTop = profile.expectTop?.filter((objectId) => objectId !== id);
+    if (!profile.expectTop?.length) delete profile.expectTop;
   }
 }
 
 // ---------- Блоки и вопросы ----------
 
 export function addBlock(base: KnowledgeBase): Block {
-  const block: Block = { id: nextId('b', base.blocks), title: '', description: '', questions: [] };
+  const block: Block = { id: newId('b', base.blocks), title: '', description: '', questions: [] };
   base.blocks.push(block);
   return block;
 }
@@ -138,15 +150,12 @@ export function removeBlock(base: KnowledgeBase, id: string): void {
   base.blocks = base.blocks.filter((item) => item.id !== id);
 }
 
-/** Вариант ответа с первой свободной буквой: a, b, c… */
 export function newOption(question: Pick<Question, 'options'>): Option {
-  const used = new Set(question.options.map((option) => option.id));
-  const letter = [...'abcdefghijklmnopqrstuvwxyz'].find((candidate) => !used.has(candidate));
-  return { id: letter ?? nextId('o', question.options), text: '', weights: {} };
+  return { id: newId('v', question.options), text: '', weights: {} };
 }
 
 export function addQuestion(base: KnowledgeBase, blockId: string): Question {
-  const question: Question = { id: nextId('q', allQuestions(base)), parameter: '', text: '', type: 'single', note: '', options: [] };
+  const question: Question = { id: newId('q', allQuestions(base)), parameter: '', text: '', type: 'single', note: '', options: [] };
   question.options.push(newOption(question));
   question.options.push(newOption(question));
   base.blocks.find((block) => block.id === blockId)?.questions.push(question);
@@ -231,7 +240,7 @@ export function addRule(base: KnowledgeBase): Rule | null {
   const [source, target] = questions;
   const numbers = base.rules.map((rule) => Number(/^П(\d+)$/.exec(rule.title)?.[1] ?? 0));
   const rule: Rule = {
-    id: nextId('r', base.rules),
+    id: newId('r', base.rules),
     title: `П${Math.max(0, ...numbers) + 1}`,
     if: [{ question: source.id, option: source.options[0].id }],
     then: { question: target.id, option: target.options[0].id },
@@ -239,6 +248,14 @@ export function addRule(base: KnowledgeBase): Rule | null {
   };
   base.rules.push(rule);
   return rule;
+}
+
+/** Новое условие: копия последнего, а если условий нет — первый вопрос с вариантами. */
+export function addCondition(base: KnowledgeBase, rule: Rule): void {
+  const last = rule.if.at(-1);
+  const question = allQuestions(base).find((item) => item.options.length > 0);
+  if (last) rule.if.push({ ...last });
+  else if (question) rule.if.push({ question: question.id, option: question.options[0].id });
 }
 
 // ---------- Тестовые профили ----------

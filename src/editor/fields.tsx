@@ -222,8 +222,10 @@ export function ImageField({ label, image, onChange }: { label: string; image: I
   const [previewUrl, setPreviewUrl] = useState(image?.url ?? '');
   const credit = image?.credit;
 
+  /** Обычно адрес стирают, чтобы вставить новый, поэтому подпись и авторы остаются, пока они есть. */
   function setUrl(url: string) {
-    onChange(url ? { ...image, url } : undefined);
+    const details = image?.alt || image?.position || image?.credit;
+    onChange(url || details ? { ...image, url } : undefined);
     if (!url) setPreviewUrl('');
   }
 
@@ -281,7 +283,17 @@ export function ImageField({ label, image, onChange }: { label: string; image: I
               }}
             />
             <TextField label="Автор" value={credit?.author ?? ''} onChange={(value) => setCredit('author', value)} />
+            <TextField label="Название работы" value={credit?.title ?? ''} onChange={(value) => setCredit('title', value)} />
             <TextField label="Лицензия" value={credit?.license ?? ''} placeholder="CC BY 4.0" onChange={(value) => setCredit('license', value)} />
+            <CheckedTextField
+              label="Ссылка на лицензию"
+              value={credit?.licenseUrl ?? ''}
+              placeholder="https://…"
+              check={(url) => !url || isSafeLinkUrl(url)}
+              errorText="Допускается только адрес http(s)."
+              onChange={(value) => setCredit('licenseUrl', value)}
+            />
+            <TextField label="Источник" value={credit?.source ?? ''} placeholder="Wikimedia Commons" onChange={(value) => setCredit('source', value)} />
             <CheckedTextField
               label="Ссылка на источник"
               value={credit?.url ?? ''}

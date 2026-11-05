@@ -141,15 +141,33 @@ export function isComplete(base: KnowledgeBase, answers: Answers): boolean {
 /**
  * Наименьшая и наибольшая сумма, которую вопрос может дать атрибуту: в вопросе с одним ответом —
  * наименьший и наибольший вес среди вариантов, с несколькими — сумма отрицательных и сумма положительных.
+ * «Ничего из этого» нельзя совместить с другими вариантами, поэтому его вес с ними не складывается.
  */
 export function questionBounds(question: Question, attribute: string): [number, number] {
-  const weights = question.options.map((option) => weight(option, attribute));
-  if (weights.length === 0) return [0, 0];
-  if (question.type === 'single') return [Math.min(...weights), Math.max(...weights)];
-  return [
-    weights.filter((w) => w < 0).reduce((sum, w) => sum + w, 0),
-    weights.filter((w) => w > 0).reduce((sum, w) => sum + w, 0),
-  ];
+  if (question.options.length === 0) return [0, 0];
+  let low = Infinity;
+  let high = -Infinity;
+  if (question.type === 'single') {
+    for (const option of question.options) {
+      low = Math.min(low, weight(option, attribute));
+      high = Math.max(high, weight(option, attribute));
+    }
+    return [low, high];
+  }
+  low = 0;
+  high = 0;
+  for (const option of question.options) {
+    if (option.exclusive) continue;
+    const value = weight(option, attribute);
+    if (value < 0) low += value;
+    else high += value;
+  }
+  for (const option of question.options) {
+    if (!option.exclusive) continue;
+    low = Math.min(low, weight(option, attribute));
+    high = Math.max(high, weight(option, attribute));
+  }
+  return [low, high];
 }
 
 export interface Profile {

@@ -1,5 +1,6 @@
 import { useBase } from '../base.ts';
 import type { Attribute } from '../engine/types.ts';
+import { IMPORTANCE_MAX } from '../engine/validate.ts';
 import { plural } from '../plural.ts';
 import type { UpdateBase } from './EditorScreen.tsx';
 import { IssueList, NumberField, RowActions, SectionHead, TextField } from './fields.tsx';
@@ -60,8 +61,8 @@ export function AttributesSection({ update }: { update: UpdateBase }) {
                 <NumberField
                   label="Важность"
                   value={attribute.importance}
-                  check={(value) => value >= 0}
-                  errorText="Нужно число от 0."
+                  check={(value) => value >= 0 && value <= IMPORTANCE_MAX}
+                  errorText={`Нужно число от 0 до ${IMPORTANCE_MAX}.`}
                   onChange={(value) => edit(attribute.id, (item) => void (item.importance = value))}
                 />
                 <TextField

@@ -14,7 +14,13 @@ export function GroupsSection({ update }: { update: UpdateBase }) {
     });
 
   function remove(group: Group) {
-    const question = `Удалить группу «${group.title || 'без названия'}»? Объекты и блоки останутся без группы, связанный атрибут останется в базе.`;
+    const last = base.groups.length === 1;
+    const inProfiles = base.testProfiles.some(
+      (profile) => profile.expectGroup?.includes(group.id) || (last && (profile.expectClose !== undefined || profile.expectWeak !== undefined)),
+    );
+    const question =
+      `Удалить группу «${group.title || 'без названия'}»? Объекты и блоки останутся без группы, связанный атрибут останется в базе.` +
+      (inProfiles ? ' Тестовые профили перестанут проверять связанные с ней ожидания.' : '');
     if (window.confirm(question)) update((draft) => removeGroup(draft, group.id));
   }
 

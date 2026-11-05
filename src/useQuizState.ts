@@ -30,6 +30,13 @@ export function nearestAsked(compiled: CompiledBase, from: number, direction: 1 
   return null;
 }
 
+/** Первый задаваемый вопрос без ответа. Он может оказаться позади текущего, если базу изменили после начала теста. */
+export function firstUnanswered(compiled: CompiledBase, answers: Answers): number | null {
+  const { answers: effective, inferred } = infer(compiled.base, answers);
+  const found = compiled.steps.find(({ question }) => !inferred.has(question.id) && selectedOptions(question, effective).length === 0);
+  return found ? found.index : null;
+}
+
 /** Оставляет только ответы на существующие вопросы и варианты; в вопросе с одним ответом — один. */
 function currentAnswers(compiled: CompiledBase, saved: Answers): Answers {
   const answers: Answers = {};

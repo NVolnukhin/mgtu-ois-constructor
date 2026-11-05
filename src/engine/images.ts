@@ -41,8 +41,9 @@ export interface FoundImage {
 /** Все картинки базы. */
 export function baseImages(base: KnowledgeBase): FoundImage[] {
   const found: FoundImage[] = [];
+  // Пустой адрес бывает, пока его заменяют в редакторе: картинки при этом ещё нет.
   const add = (image: ImageRef | undefined, where: string, section: FoundImage['section']) => {
-    if (image) found.push({ image, where, section });
+    if (image?.url) found.push({ image, where, section });
   };
   add(base.image, 'обложка базы', 'general');
   for (const group of base.groups) add(group.image, `группа «${group.title}»`, 'groups');

@@ -5,7 +5,7 @@ import { minAskedQuestions } from '../engine/validate.ts';
 import { plural } from '../plural.ts';
 import type { UpdateBase } from './EditorScreen.tsx';
 import { IssueList, RowActions, SectionHead, TextField } from './fields.tsx';
-import { addRule, moveItem } from './ops.ts';
+import { addCondition, addRule, moveItem } from './ops.ts';
 
 export function RulesSection({ update }: { update: UpdateBase }) {
   const { base, issues, steps, attributeRules } = useBase();
@@ -80,7 +80,12 @@ export function RulesSection({ update }: { update: UpdateBase }) {
                 <button
                   type="button"
                   className="text-button"
-                  onClick={() => edit(rule.id, (item) => void item.if.push({ ...item.if[item.if.length - 1] }))}
+                  onClick={() =>
+                    update((draft) => {
+                      const item = draft.rules.find((candidate) => candidate.id === rule.id);
+                      if (item) addCondition(draft, item);
+                    })
+                  }
                 >
                   Добавить условие через И
                 </button>

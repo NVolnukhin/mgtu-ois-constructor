@@ -4,8 +4,11 @@ import type { ParseResult } from './engine/parse.ts';
 import type { KnowledgeBase } from './engine/types.ts';
 import { parseForImport } from './engine/validate.ts';
 
-/** Больше в localStorage всё равно не поместится. */
-const MAX_FILE_BYTES = 5 * 1024 * 1024;
+/**
+ * Больше в localStorage всё равно не поместится. Файл намного больше записи в хранилище:
+ * в нём отступы, а кириллица занимает два байта на символ.
+ */
+const MAX_FILE_BYTES = 20 * 1024 * 1024;
 
 /** Имя файла из названия базы: символы, запрещённые в именах файлов, заменяются пробелами. */
 function fileName(title: string): string {
@@ -36,5 +39,9 @@ export async function readBaseFile(file: File): Promise<ParseResult> {
     const size = (file.size / 1024 / 1024).toFixed(1).replace('.', ',');
     return { ok: false, errors: [`Файл слишком большой: ${size} МБ. В браузере на все базы есть около 5 МБ.`] };
   }
-  return parseForImport(await file.text());
+  try {
+    return parseForImport(await file.text());
+  } catch {
+    return { ok: false, errors: ['Не удалось разобрать файл: он повреждён или слишком сложен.'] };
+  }
 }

@@ -3,7 +3,7 @@ import { testPath, useBase } from '../base.ts';
 import { askedQuestions, evaluate, infer, isComplete, liveRanking, selectedOptions } from '../engine/scoring.ts';
 import { basePath, navigate } from '../router.ts';
 import type { BaseSection } from '../router.ts';
-import { nearestAsked, useQuizState } from '../useQuizState.ts';
+import { firstUnanswered, nearestAsked, useQuizState } from '../useQuizState.ts';
 import { BaseLayout } from './BaseLayout.tsx';
 import { CreditsScreen } from './CreditsScreen.tsx';
 import { KnowledgeBaseScreen } from './KnowledgeBaseScreen.tsx';
@@ -60,10 +60,15 @@ export function SessionScreens({ section }: { section: BaseSection }) {
       if (blockIndex > current.blockIndex || inBlock.length === 0) return 0;
       return (inBlock.indexOf(current.question) + 1) / inBlock.length;
     });
+    const missing = firstUnanswered(compiled, answers);
     return {
       current,
       position: asked.indexOf(current.question) + 1,
       total: asked.length,
+      // Дальше вопросов нет, и неотвеченных позади тоже: следующий шаг — результат.
+      finishing: nearestAsked(compiled, step + 1, 1, answers) === null && (missing === null || missing === step),
+      // Первый задаваемый вопрос блока: здесь показывается описание блока.
+      blockStart: asked.find((q) => current.block.questions.includes(q)) === current.question,
       skipped,
       progress,
       ranking: liveRanking(base, answers),
@@ -73,7 +78,7 @@ export function SessionScreens({ section }: { section: BaseSection }) {
         : null,
       hasData: Object.values(effective).some((ids) => ids.length > 0),
     };
-  }, [shown, step, base, steps, answers]);
+  }, [shown, step, compiled, base, steps, answers]);
 
   function start() {
     dispatch({ type: 'reset' });
@@ -81,12 +86,14 @@ export function SessionScreens({ section }: { section: BaseSection }) {
   }
 
   function resume() {
-    dispatch({ type: 'goto', step: nearestAsked(compiled, step, 1, answers) ?? step });
+    const missing = firstUnanswered(compiled, answers);
+    const target = missing !== null && missing < step ? missing : (nearestAsked(compiled, step, 1, answers) ?? step);
+    dispatch({ type: 'goto', step: target });
     navigate(basePath(id, 'test'));
   }
 
   function next() {
-    const target = nearestAsked(compiled, step + 1, 1, answers);
+    const target = nearestAsked(compiled, step + 1, 1, answers) ?? firstUnanswered(compiled, answers);
     if (target === null) navigate(basePath(id, 'result'));
     else dispatch({ type: 'goto', step: target });
   }
@@ -108,6 +115,8 @@ export function SessionScreens({ section }: { section: BaseSection }) {
           selected={answers[quizView.current.question.id] ?? []}
           position={quizView.position}
           total={quizView.total}
+          finishing={quizView.finishing}
+          blockStart={quizView.blockStart}
           progress={quizView.progress}
           skipped={quizView.skipped}
           ranking={quizView.ranking}

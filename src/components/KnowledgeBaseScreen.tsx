@@ -201,12 +201,14 @@ function GroupsTab() {
 function ParametersTab() {
   const { base, steps, attributeRuleOf } = useBase();
   const weights = allQuestions(base).flatMap((q) => q.options.flatMap((o) => Object.values(o.weights)));
+  const lowest = weights.reduce((min, value) => Math.min(min, value), Infinity);
+  const highest = weights.reduce((max, value) => Math.max(max, value), -Infinity);
   return (
     <>
       <p className="tabpanel__lead">
         Каждый вопрос — параметр рабочей базы данных. Вариант ответа с весами — правило «параметр + атрибут» (его номер стоит перед
         весами): ответ даёт атрибутам «преимущество»
-        {weights.length > 0 && `, в этой базе от ${formatWeight(Math.min(...weights))} до ${formatWeight(Math.max(...weights))}`}.
+        {weights.length > 0 && `, в этой базе от ${formatWeight(lowest)} до ${formatWeight(highest)}`}.
       </p>
       <ol className="params">
         {steps.map(({ question, index }) => {
@@ -239,6 +241,11 @@ function ParametersTab() {
                   );
                 })}
               </ul>
+              {question.note && (
+                <p className="rule__note">
+                  <strong>Обоснование весов.</strong> {question.note}
+                </p>
+              )}
             </li>
           );
         })}

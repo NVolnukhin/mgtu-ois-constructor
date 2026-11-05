@@ -6,6 +6,7 @@ import { readFileSync } from 'node:fs';
 import {
   addAttribute,
   addBlock,
+  addCondition,
   addGroup,
   addObject,
   addProfile,
@@ -27,8 +28,8 @@ import {
   setWeight,
 } from '../src/editor/ops.ts';
 import { parseBase, parseBaseText } from '../src/engine/parse.ts';
-import { askedQuestions, evaluate, infer, isComplete, liveRanking } from '../src/engine/scoring.ts';
-import type { KnowledgeBase, Question } from '../src/engine/types.ts';
+import { askedQuestions, evaluate, infer, isComplete, liveRanking, maxScores, questionBounds } from '../src/engine/scoring.ts';
+import type { KnowledgeBase, Question, TestProfile } from '../src/engine/types.ts';
 import { checkRequirements, hasErrors, minAskedQuestions, parseForImport, runTestProfiles, validateBase } from '../src/engine/validate.ts';
 
 function question(id: string, type: Question['type'] = 'single'): Question {
@@ -232,6 +233,63 @@ const CASES: Record<string, () => void> = {
     strictEqual(broken.problems.length > 0, true);
   },
 
+  '«ничего из этого» с весом не складывается с остальными вариантами'() {
+    const base = smallBase();
+    base.blocks[0].questions = [
+      {
+        ...question('q1', 'multiple'),
+        options: [
+          { id: 'a', text: 'А', weights: { x: 3 } },
+          { id: 'b', text: 'Б', weights: { x: 3, y: -1 } },
+          { id: 'c', text: 'Ничего', exclusive: true, weights: { x: 3, y: -2 } },
+        ],
+      },
+    ];
+    const [q] = base.blocks[0].questions;
+    deepStrictEqual(questionBounds(q, 'x'), [0, 6]);
+    deepStrictEqual(questionBounds(q, 'y'), [-2, 0]);
+    strictEqual(maxScores(base).x, 6);
+    delete q.options[2].exclusive;
+    deepStrictEqual(questionBounds(q, 'x'), [0, 9], 'без отметки варианты складываются как обычно');
+  },
+
+  'проверка: важность атрибута не ломает расчёт'() {
+    const base = smallBase();
+    base.attributes[0].importance = 1e308;
+    strictEqual(hasErrors(validateBase(base)), true, 'запредельная важность — ошибка');
+    base.attributes[0].importance = 0;
+    base.attributes[1].importance = 0;
+    strictEqual(hasErrors(validateBase(base)), true, 'все важности 0 — рейтинг не работает');
+    base.attributes[1].importance = 100;
+    strictEqual(hasErrors(validateBase(base)), false);
+  },
+
+  'импорт: ссылки в никуда в тестовых профилях отклоняются'() {
+    const imported = (profile: Partial<TestProfile>) => {
+      const base = smallBase();
+      base.testProfiles = [{ name: 'П', answers: {}, ...profile }];
+      return parseForImport(JSON.stringify(base)).ok;
+    };
+    strictEqual(imported({}), true);
+    strictEqual(imported({ answers: { нет: ['a'] } }), false, 'неизвестный вопрос');
+    strictEqual(imported({ answers: { q1: ['нет'] } }), false, 'неизвестный вариант');
+    strictEqual(imported({ expectGroup: ['нет'] }), false, 'неизвестная группа');
+    strictEqual(imported({ expectTop: ['нет'] }), false, 'неизвестный объект');
+  },
+
+  'профиль с ожиданиями об итоге в базе без групп не проходит молча'() {
+    const base = smallBase();
+    base.testProfiles = [{ name: 'П', answers: { q1: ['a'], q2: ['a'], q3: ['a'], q4: ['a'] }, expectWeak: true }];
+    strictEqual(runTestProfiles(base)[0].problems.length, 1);
+  },
+
+  'разбор файла: очень большой вопрос не роняет расчёт'() {
+    const base = smallBase();
+    const options = Array.from({ length: 200_000 }, (_, index) => ({ id: `o${index}`, text: '', weights: { x: index % 3 } }));
+    base.blocks[0].questions[0].options = options;
+    deepStrictEqual(questionBounds(base.blocks[0].questions[0], 'x'), [0, 2]);
+  },
+
   'разбор файла: хорошая база проходит без потерь'() {
     const base = smallBase();
     const parsed = parseBase(JSON.parse(JSON.stringify(base)));
@@ -328,12 +386,18 @@ const CASES: Record<string, () => void> = {
     strictEqual(validateBase(base).some((issue) => issue.severity === 'error' && issue.section === 'rules'), false, 'новое правило сразу правильное');
   },
 
-  'редактор: варианты получают свободные буквы, тип вопроса чистит лишнее'() {
+  'редактор: удалённые id не используются снова, тип вопроса чистит лишнее'() {
     const base = smallBase();
     const question = base.blocks[0].questions[0];
-    strictEqual(newOption(question).id, 'c');
-    removeOption(base, question.id, 'a');
-    strictEqual(newOption(question).id, 'a');
+    // Новый вопрос или вариант не должен получить сохранённый ответ на удалённый.
+    const blockId = base.blocks[0].id;
+    const added = addQuestion(base, blockId);
+    removeQuestion(base, added.id);
+    strictEqual(addQuestion(base, blockId).id === added.id, false, 'id вопроса не повторяется');
+    const option = newOption(question);
+    question.options.push(option);
+    removeOption(base, question.id, option.id);
+    strictEqual(newOption(question).id === option.id, false, 'id варианта не повторяется');
     question.options[0].exclusive = true;
     question.reasonTemplate = { g: 'Шаблон: {options}' };
     setQuestionType(question, 'multiple');
@@ -341,11 +405,11 @@ const CASES: Record<string, () => void> = {
     setQuestionType(question, 'single');
     strictEqual('exclusive' in question.options[0], false);
     strictEqual('reasonTemplate' in question, false);
-    const option = question.options[0];
-    setPhrase(option, 'reasons', 'g', 'Причина');
-    deepStrictEqual(option.reasons, { g: 'Причина' });
-    setPhrase(option, 'reasons', 'g', '');
-    strictEqual('reasons' in option, false, 'опустевший словарь не остаётся');
+    const first = question.options[0];
+    setPhrase(first, 'reasons', 'g', 'Причина');
+    deepStrictEqual(first.reasons, { g: 'Причина' });
+    setPhrase(first, 'reasons', 'g', '');
+    strictEqual('reasons' in first, false, 'опустевший словарь не остаётся');
   },
 
   'редактор: удаление не оставляет ссылок в никуда'() {
@@ -395,6 +459,36 @@ const CASES: Record<string, () => void> = {
     reloads(base, 'профиль');
     removeGroup(base, group.id);
     reloads(base, 'после удаления группы');
+  },
+
+  'редактор: условие в правило без условий добавляется настоящее'() {
+    const base = smallBase();
+    const rule = { id: 'r', title: 'П1', if: [], then: { question: 'q2', option: 'a' }, note: '' };
+    base.rules = [rule];
+    assertImportable(base, 'правило без условий из чужого файла');
+    addCondition(base, rule);
+    deepStrictEqual(rule.if, [{ question: 'q1', option: 'a' }]);
+    addCondition(base, rule);
+    strictEqual(rule.if.length, 2);
+    assertImportable(base, 'после добавления условий');
+  },
+
+  'редактор: профили не проверяют то, чего больше нет'() {
+    const base = smallBase();
+    base.groups = [
+      { id: 'gx', attribute: 'x', title: 'Икс', description: '' },
+      { id: 'gy', attribute: 'y', title: 'Игрек', description: '' },
+    ];
+    const answers = { q1: ['a'], q2: ['a'], q3: ['a'], q4: ['a'] };
+    addProfile(base, { answers, expectGroup: ['gx'], expectTop: ['ox'], expectClose: false, expectWeak: false });
+    removeGroup(base, 'gx');
+    strictEqual('expectGroup' in base.testProfiles[0], false, 'опустевшее ожидание убирается');
+    strictEqual(base.testProfiles[0].expectWeak, false, 'пока группы есть, ожидание об итоге остаётся');
+    removeGroup(base, 'gy');
+    deepStrictEqual(Object.keys(base.testProfiles[0]).sort(), ['answers', 'expectTop', 'name'], 'групп нет — ожиданий об итоге нет');
+    removeObject(base, 'ox');
+    strictEqual('expectTop' in base.testProfiles[0], false);
+    assertImportable(base, 'профиль после удалений');
   },
 
   'редактор: копия примера независима и даёт те же результаты'() {
