@@ -14,6 +14,7 @@ import {
   validateImages,
   validateQuiz,
 } from './lib.ts';
+import { compareWithBaseline, writeBaseline } from './baseline.ts';
 import { plural } from '../src/plural.ts';
 
 /** Допустимая доля побед одного направления на случайных ответах. */
@@ -100,6 +101,19 @@ for (const { object, share, top } of objectShares) {
     failed = true;
     console.log(`  ✗ «${object.title}» попадает в пятёрку лишь в ${percent(top, 1)} случаев`);
   }
+}
+
+if (process.argv.includes('--update-baseline')) {
+  writeBaseline(quiz);
+  console.log('\nЭталон обновлён: scripts/example-baseline.json.');
+}
+const drift = compareWithBaseline(quiz);
+if (drift.length > 0) {
+  failed = true;
+  console.log(`\n✗ Результаты разошлись со сданной версией (${drift.length}):`);
+  for (const problem of drift) console.log(`  – ${problem}`);
+} else {
+  console.log('\nРезультаты совпадают со сданной версией: персоны и случайные анкеты, точно до 10 знаков.');
 }
 
 console.log(failed ? '\nПроверка не пройдена.' : '\nВсё в порядке.');
