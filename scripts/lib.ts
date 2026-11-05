@@ -130,7 +130,8 @@ export function validateExampleImages(base: KnowledgeBase): string[] {
     if (!author || !source || !url || !license) errors.push(`У картинки ${image.url} не указаны автор, источник или лицензия`);
   }
   for (const file of readdirSync(new URL('../public/images/', import.meta.url))) {
-    if (!used.has(`images/${file}`)) errors.push(`Файл public/images/${file} нигде не используется`);
+    // Служебные файлы системы вроде .DS_Store на сайт попадают, но картинками не считаются.
+    if (!file.startsWith('.') && !used.has(`images/${file}`)) errors.push(`Файл public/images/${file} нигде не используется`);
   }
   return errors;
 }

@@ -2546,8 +2546,12 @@ a {
     position: sticky;
     left: 0;
     z-index: 1;
-    min-width: 260px;
+    min-width: 300px;
   }
+}
+
+.matrix select.cell-input {
+  min-width: 150px;
 }
 
 .kb-table thead th.matrix__sticky {
@@ -2585,6 +2589,19 @@ a {
 .scale-select:focus {
   border-color: var(--color-ink);
   outline: 1px solid var(--color-ink);
+}
+
+/* Значения объектов подсвечены так же, как в таблице базы знаний. */
+.scale-select.lvl--1 {
+  background: #fff1f3;
+}
+
+.scale-select.lvl--2 {
+  background: #ffd9e0;
+}
+
+.scale-select.lvl--3 {
+  background: #ffb3c1;
 }
 
 .weight--plus {
