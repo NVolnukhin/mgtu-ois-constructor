@@ -1,36 +1,40 @@
-// npm run docs — собирает документацию по базе знаний из content/quiz.json и content/images.json:
+// npm run docs — собирает документацию по примеру из content/example.json:
 // docs/knowledge-base.md, docs/objects.csv, docs/questions.csv, docs/validation.md, docs/credits.md.
 
 import { writeFileSync } from 'node:fs';
-import { ATTRIBUTE_IDS, DIRECTION_IDS } from '../src/engine/types.ts';
-import type { Question, Weights } from '../src/engine/types.ts';
-import { allQuestions, attributeRules, CLOSE_GAP, maxScores, SPHERE_WEIGHT, WEAK_PERCENT } from '../src/engine/scoring.ts';
+import { baseImages } from '../src/engine/images.ts';
+import { allQuestions, attributeRules, maxScores } from '../src/engine/scoring.ts';
+import type { Condition, Question, Weights } from '../src/engine/types.ts';
+import { checkRequirements, minAskedQuestions, validateBase } from '../src/engine/validate.ts';
 import {
   attributeTitles,
   expectedRandomScores,
-  loadImages,
-  loadQuiz,
-  minAskedQuestions,
+  groupTitles,
+  loadExample,
   percent,
-  runPersonas,
+  runExampleProfiles,
   simulate,
-  validateImages,
-  validateQuiz,
+  validateExampleImages,
+  validateExamplePrinciples,
 } from './lib.ts';
 import { plural } from '../src/plural.ts';
 
-const quiz = loadQuiz();
-const errors = [...validateQuiz(quiz), ...validateImages(quiz, loadImages())];
+const base = loadExample();
+const errors = [...validateBase(base).map((issue) => issue.message), ...validateExamplePrinciples(base), ...validateExampleImages(base)];
 if (errors.length > 0) {
   console.error(`В базе знаний ${errors.length} ошибок — подробности в npm run check.`);
   process.exit(1);
 }
 
-const questions = allQuestions(quiz);
+const questions = allQuestions(base);
 const number = new Map(questions.map((question, index) => [question.id, index + 1]));
-const short = attributeTitles(quiz);
-const directionTitle = Object.fromEntries(quiz.directions.map((d) => [d.id, d.title]));
-const max = maxScores(quiz);
+const attributeIds = base.attributes.map((attribute) => attribute.id);
+const short = attributeTitles(base);
+const groupShort = groupTitles(base);
+const groupTitle = Object.fromEntries(base.groups.map((g) => [g.id, g.title]));
+const max = maxScores(base);
+const { closeGap, weakPercent } = base.settings;
+const SOURCE = '`content/example.json`';
 const generated = (source: string) =>
   `> Файл собирается из ${source} командой \`npm run docs\`. Правки вносятся туда, а не сюда.`;
 
@@ -52,7 +56,7 @@ function signed(value: number): string {
 }
 
 function weightList(weights: Weights): string {
-  const parts = ATTRIBUTE_IDS.filter((id) => weights[id]).map((id) => `${short[id]} ${signed(weights[id]!)}`);
+  const parts = attributeIds.filter((id) => weights[id]).map((id) => `${short[id]} ${signed(weights[id])}`);
   return parts.length > 0 ? parts.join(', ') : '—';
 }
 
@@ -62,22 +66,29 @@ function csv(rows: string[][]): string {
   return String.fromCharCode(0xfeff) + rows.map((row) => row.map(escape).join(';')).join('\n') + '\n';
 }
 
+/** Условие или заключение правила: «параметр» = «значение». */
+function conditionText({ question: questionId, option: optionId }: Condition): string {
+  const question = questions.find((q) => q.id === questionId)!;
+  const option = question.options.find((o) => o.id === optionId)!;
+  return `«${question.parameter}» = «${cell(option.text)}»`;
+}
+
 function knowledgeBaseMarkdown(): string {
-  const rules = attributeRules(quiz);
+  const rules = attributeRules(base);
   const ruleOf = new Map(rules.map((r) => [`${r.question.id}/${r.option.id}`, r.title]));
   const effects = rules.reduce((n, r) => n + r.effects.length, 0);
   const options = questions.reduce((n, q) => n + q.options.length, 0);
-  const inferred = new Set(quiz.rules.map((r) => r.then.question)).size;
+  const inferred = new Set(base.rules.map((r) => r.then.question)).size;
   const example = rules.find((r) => r.question.id === 'general-setting' && r.option.id === 'a') ?? rules[0];
   const single = questions.filter((q) => q.type === 'single');
   const situational = single.filter((q) => q.situational).map((q) => number.get(q.id));
   const multiple = questions.filter((q) => q.type === 'multiple').map((q) => number.get(q.id));
   const lines = [
-    `# ${quiz.title} — база знаний`,
+    `# ${base.title} — база знаний`,
     '',
-    generated('`content/quiz.json`'),
+    generated(SOURCE),
     '',
-    `База знаний: ${plural(quiz.attributes.length, ['атрибут', 'атрибута', 'атрибутов'])}, ${plural(quiz.objects.length, ['объект', 'объекта', 'объектов'])} ранжирования, ${plural(questions.length, ['вопрос-параметр', 'вопроса-параметра', 'вопросов-параметров'])} и ${plural(rules.length + quiz.rules.length, ['правило', 'правила', 'правил'])}: ${rules.length} «параметр + атрибут» и ${quiz.rules.length} «параметр + параметр». Как по ним принимается решение — в [методике](methodology.md).`,
+    `База знаний: ${plural(base.attributes.length, ['атрибут', 'атрибута', 'атрибутов'])}, ${plural(base.objects.length, ['объект', 'объекта', 'объектов'])} ранжирования, ${plural(questions.length, ['вопрос-параметр', 'вопроса-параметра', 'вопросов-параметров'])} и ${plural(rules.length + base.rules.length, ['правило', 'правила', 'правил'])}: ${rules.length} «параметр + атрибут» и ${base.rules.length} «параметр + параметр». Как по ним принимается решение — в [методике](methodology.md).`,
     '',
     '## Атрибуты',
     '',
@@ -85,19 +96,19 @@ function knowledgeBaseMarkdown(): string {
     '',
     '| Код | Атрибут | Группа | Что означает шкала |',
     '|---|---|---|---|',
-    ...quiz.attributes.map(
-      (a) => `| \`${a.id}\` | ${a.title} | ${a.group === 'sphere' ? `сфера (вес ${SPHERE_WEIGHT})` : 'стиль'} | ${cell(a.description)} |`,
+    ...base.attributes.map(
+      (a) => `| \`${a.id}\` | ${a.title} | ${base.groups.some((g) => g.attribute === a.id) ? `сфера (вес ${a.importance})` : 'стиль'} | ${cell(a.description)} |`,
     ),
     '',
     '## Объекты ранжирования',
     '',
-    `| № | Вид деятельности | Направление | ${ATTRIBUTE_IDS.map((id) => short[id]).join(' | ')} |`,
-    `|:-:|---|---|${ATTRIBUTE_IDS.map(() => ':-:').join('|')}|`,
-    ...quiz.objects.map(
-      (o, i) => `| ${i + 1} | ${cell(o.title)} | ${directionTitle[o.direction]} | ${ATTRIBUTE_IDS.map((id) => o.attributes[id] || '·').join(' | ')} |`,
+    `| № | Вид деятельности | Направление | ${attributeIds.map((id) => short[id]).join(' | ')} |`,
+    `|:-:|---|---|${attributeIds.map(() => ':-:').join('|')}|`,
+    ...base.objects.map(
+      (o, i) => `| ${i + 1} | ${cell(o.title)} | ${groupTitle[o.group!]} | ${attributeIds.map((id) => o.values[id] || '·').join(' | ')} |`,
     ),
     '',
-    ...quiz.objects.flatMap((o, i) => [`${i + 1}. **${o.title}** — ${o.description}`]),
+    ...base.objects.flatMap((o, i) => [`${i + 1}. **${o.title}** — ${o.description}`]),
     '',
     '## Правила «параметр + атрибут»',
     '',
@@ -111,26 +122,23 @@ function knowledgeBaseMarkdown(): string {
     '',
     '| Правило | Если | То | Почему |',
     '|:-:|---|---|---|',
-    ...quiz.rules.map((rule) => {
-      const source = questions.find((q) => q.id === rule.if.question)!;
-      const target = questions.find((q) => q.id === rule.then.question)!;
-      const sourceOption = source.options.find((o) => o.id === rule.if.option)!;
-      const targetOption = target.options.find((o) => o.id === rule.then.option)!;
-      return `| ${rule.title} | «${source.parameter}» = «${cell(sourceOption.text)}» | «${target.parameter}» = «${cell(targetOption.text)}» (вопрос ${number.get(target.id)} не задаётся) | ${cell(rule.note)} |`;
-    }),
+    ...base.rules.map(
+      (rule) =>
+        `| ${rule.title} | ${rule.if.map(conditionText).join(' И ')} | ${conditionText(rule.then)} (вопрос ${number.get(rule.then.question)} не задаётся) | ${cell(rule.note)} |`,
+    ),
     '',
-    `При срабатывании всех правил задаётся ${minAskedQuestions(quiz)} вопросов из ${questions.length}.`,
+    `При срабатывании всех правил задаётся ${minAskedQuestions(base)} вопросов из ${questions.length}.`,
     '',
     `Таких правил немного намеренно. Каждое снимает вопрос, а задаваться должно не меньше 20 вопросов: при ${questions.length} вопросах правила могут выводить не больше ${plural(questions.length - 20, ['параметра', 'параметров', 'параметров'])}, и сейчас выводятся ${inferred}. Кроме того, правило отвечает за пользователя, поэтому оно задано только там, где вывод однозначен; вероятностные связи между ответами учтены правилами «параметр + атрибут».`,
     '',
     '## Вопросы — параметры рабочей базы данных',
     '',
     `Один ответ — ${single.length} вопросов (из них ${situational.length} — ситуационные задачи: № ${situational.join(', ')}), несколько ответов — ${multiple.length}: № ${multiple.join(', ')}.`,
-    `Веса — это «преимущество», которое ответ даёт атрибутам (правило «параметр + атрибут»): для сфер от 0 до 3, для стиля от −2 до 3. Максимум по сфере у всех направлений одинаковый: ${DIRECTION_IDS.map((id) => `${short[id]} ${max[id]}`).join(', ')}.`,
+    `Веса — это «преимущество», которое ответ даёт атрибутам (правило «параметр + атрибут»): для сфер от 0 до 3, для стиля от −2 до 3. Максимум по сфере у всех направлений одинаковый: ${base.groups.map((g) => `${short[g.attribute]} ${max[g.attribute]}`).join(', ')}.`,
   ];
 
-  quiz.blocks.forEach((block, blockIndex) => {
-    const owner = quiz.directions.find((d) => d.id === block.direction);
+  base.blocks.forEach((block, blockIndex) => {
+    const owner = base.groups.find((g) => g.id === block.group);
     lines.push(
       '',
       `### Блок ${blockIndex + 1}. ${block.title}`,
@@ -140,12 +148,12 @@ function knowledgeBaseMarkdown(): string {
         : `Общий блок: варианты сравнивают сферы между собой и описывают стиль. ${block.description}.`,
     );
     for (const question of block.questions) {
-      const rule = quiz.rules.find((r) => r.then.question === question.id);
+      const rule = base.rules.find((r) => r.then.question === question.id);
       lines.push(
         '',
         `#### ${number.get(question.id)}. ${question.text}`,
         '',
-        `**${typeLabel(question)}**${question.situational ? ' — ситуационная задача' : ''} · параметр «${question.parameter}»${rule ? ` · может быть выведен правилом ${quiz.rules.filter((r) => r.then.question === question.id).map((r) => r.title).join(', ')}` : ''}`,
+        `**${typeLabel(question)}**${question.situational ? ' — ситуационная задача' : ''} · параметр «${question.parameter}»${rule ? ` · может быть выведен правилом ${base.rules.filter((r) => r.then.question === question.id).map((r) => r.title).join(', ')}` : ''}`,
         '',
         '| | Вариант | Правило | Веса атрибутов |',
         '|:-:|---|:-:|---|',
@@ -163,23 +171,23 @@ function knowledgeBaseMarkdown(): string {
 
 function objectsCsv(): string {
   return csv([
-    ['№', 'Код', 'Вид деятельности', 'Направление', 'Описание', ...quiz.attributes.map((a) => a.title)],
-    ...quiz.objects.map((o, i) => [
+    ['№', 'Код', 'Вид деятельности', 'Направление', 'Описание', ...base.attributes.map((a) => a.title)],
+    ...base.objects.map((o, i) => [
       String(i + 1),
       o.id,
       o.title,
-      directionTitle[o.direction],
+      groupTitle[o.group!],
       o.description,
-      ...ATTRIBUTE_IDS.map((id) => String(o.attributes[id])),
+      ...attributeIds.map((id) => String(o.values[id])),
     ]),
   ]);
 }
 
 function questionsCsv(): string {
   const rows = [
-    ['№', 'Блок', 'Код вопроса', 'Параметр', 'Вопрос', 'Можно выбрать', 'Ситуационная задача', 'Вариант', 'Текст варианта', ...quiz.attributes.map((a) => a.title)],
+    ['№', 'Блок', 'Код вопроса', 'Параметр', 'Вопрос', 'Можно выбрать', 'Ситуационная задача', 'Вариант', 'Текст варианта', ...base.attributes.map((a) => a.title)],
   ];
-  quiz.blocks.forEach((block, blockIndex) => {
+  base.blocks.forEach((block, blockIndex) => {
     for (const question of block.questions) {
       for (const option of question.options) {
         rows.push([
@@ -192,7 +200,7 @@ function questionsCsv(): string {
           question.situational ? 'да' : '',
           option.id,
           option.text,
-          ...ATTRIBUTE_IDS.map((id) => String(option.weights[id] ?? 0)),
+          ...attributeIds.map((id) => String(option.weights[id] ?? 0)),
         ]);
       }
     }
@@ -201,31 +209,28 @@ function questionsCsv(): string {
 }
 
 function validationMarkdown(): string {
-  const sim = simulate(quiz);
-  const expected = expectedRandomScores(quiz);
+  const sim = simulate(base);
+  const expected = expectedRandomScores(base);
   const points = (value: number) => String(Math.round(value * 100) / 100).replace('.', ',');
-  const personas = runPersonas(quiz);
+  const personas = runExampleProfiles(base);
+  const [questionsRow, parametersRow, objectsRow, attributesRow, topRow] = checkRequirements(base);
 
   return [
     '# Проверка базы знаний',
     '',
-    generated('`content/quiz.json` и `scripts/personas.ts`'),
+    generated(SOURCE),
     'Та же проверка, но с ошибкой при нарушениях, — `npm run check`.',
     '',
     '## Требования задания',
     '',
     '| Требование | Нужно | В системе |',
     '|---|:-:|:-:|',
-    `| Вопросов | ≥ 20 | ${questions.length} (задаётся не меньше ${minAskedQuestions(quiz)}) |`,
-    `| Параметров от пользователя | ≥ 10 | ${questions.length} |`,
-    `| Объектов ранжирования | ≥ 20 | ${quiz.objects.length} |`,
-    `| Свойств у объекта | ≥ 10 | ${quiz.attributes.length} |`,
-    '| Вариантов после каждого ответа | ≥ 5 | 5 лучших + весь рейтинг по кнопке |',
+    ...[questionsRow, parametersRow, objectsRow, attributesRow, topRow].map((row) => `| ${row.title} | ${row.need} | ${row.actual} |`),
     '',
     '## Баланс сфер',
     '',
-    `Максимум M у всех направлений одинаковый: ${quiz.directions.map((d) => `${d.short} — ${max[d.id]}`).join(', ')}.`,
-    `Ожидаемая сумма баллов при случайных ответах без правил тоже одинаковая: ${quiz.directions.map((d) => `${d.short} — ${points(expected[d.id])}`).join(', ')}.`,
+    `Максимум M у всех направлений одинаковый: ${base.groups.map((g) => `${groupShort[g.id]} — ${max[g.attribute]}`).join(', ')}.`,
+    `Ожидаемая сумма баллов при случайных ответах без правил тоже одинаковая: ${base.groups.map((g) => `${groupShort[g.id]} — ${points(expected[g.id])}`).join(', ')}.`,
     '',
     '## Персоны',
     '',
@@ -233,20 +238,20 @@ function validationMarkdown(): string {
     '',
     '| Персона | Кто это | Ожидали | Направленность | Тройка видов деятельности | Задано вопросов | |',
     '|---|---|---|---|---|:-:|:-:|',
-    ...personas.map(({ persona, evaluation, asked, problems }) => {
+    ...personas.map(({ profile, evaluation, asked, problems }) => {
       const expect = [
-        persona.expect.map((id) => quiz.directions.find((d) => d.id === id)!.short).join(' или '),
-        persona.expectClose && 'почти поровну',
-        persona.expectWeak && 'склонность слабая',
+        (profile.expectGroup ?? []).map((id) => groupShort[id]).join(' или '),
+        profile.expectClose && 'почти поровну',
+        profile.expectWeak && 'склонность слабая',
       ]
         .filter(Boolean)
         .join(', ');
-      const { winner } = evaluation;
+      const { winner } = evaluation.verdict!;
       const top = evaluation.objects
         .slice(0, 3)
         .map((item) => `${item.object.title} (${percent(item.score * 100)})`)
         .join('; ');
-      return `| ${persona.name} | ${persona.story} | ${expect} | ${winner.direction.short} ${percent(winner.percent)} | ${top} | ${asked} | ${problems.length ? '✗' : '✓'} |`;
+      return `| ${profile.name} | ${profile.story} | ${expect} | ${groupShort[winner.group.id]} ${percent(winner.percent)} | ${top} | ${asked} | ${problems.length ? '✗' : '✓'} |`;
     }),
     '',
     '## Случайные ответы',
@@ -255,15 +260,15 @@ function validationMarkdown(): string {
     '',
     '| Направление | Побед | Средний процент |',
     '|---|:-:|:-:|',
-    ...quiz.directions.map((d) => `| ${d.title} | ${percent(sim.wins[d.id], sim.runs)} | ${percent(sim.meanPercent[d.id])} |`),
+    ...base.groups.map((g) => `| ${g.title} | ${percent(sim.wins[g.id], sim.runs)} | ${percent(sim.meanPercent[g.id])} |`),
     '',
-    `Слабо выраженная склонность (меньше ${WEAK_PERCENT} %) — у ${percent(sim.weak, sim.runs)} анкет, почти равное второе место (разрыв меньше ${CLOSE_GAP} п. п.) — у ${percent(sim.close, sim.runs)}.`,
+    `Слабо выраженная склонность (меньше ${weakPercent} %) — у ${percent(sim.weak, sim.runs)} анкет, почти равное второе место (разрыв меньше ${closeGap} п. п.) — у ${percent(sim.close, sim.runs)}.`,
     '',
     '«Дети» и «Экология» побеждают немного реже, потому что правила П1–П4 выводят отказные ответы именно в их блоках: при случайных ответах человек, который написал, что с детьми ему неуютно, дальше уже не может «случайно» пообещать ходить к детям полгода. У человека, отвечающего осознанно, такого перекоса нет — правило выводит тот ответ, который он дал бы сам.',
     '',
     '| Вид деятельности | Первое место | В пятёрке лидеров |',
     '|---|:-:|:-:|',
-    ...quiz.objects
+    ...base.objects
       .map((o) => ({ o, first: sim.firstPlace[o.id] / sim.runs, top: sim.topFive[o.id] / sim.runs }))
       .sort((a, b) => b.first - a.first)
       .map(({ o, first, top }) => `| ${o.title} | ${percent(first, 1)} | ${percent(top, 1)} |`),
@@ -275,19 +280,21 @@ function validationMarkdown(): string {
 
 /** Авторы и лицензии фото — лицензии CC BY и CC BY-SA требуют их указывать. */
 function creditsMarkdown(): string {
-  const images = loadImages();
+  const seen = new Set<string>();
+  const images = baseImages(base).filter(({ image }) => !seen.has(image.url) && seen.add(image.url));
   return [
     '# Фотографии',
     '',
-    generated('`content/images.json`'),
+    generated(SOURCE),
     '',
     'Все фото взяты с Wikimedia Commons и Flickr под свободными лицензиями. Для сайта они обрезаны до 3:2, уменьшены и пересжаты в WebP. Фото под CC BY-SA распространяются на тех же условиях.',
     '',
     '| Файл | Что на фото | Автор | Лицензия | Источник |',
     '|---|---|---|---|---|',
-    ...Object.values(images).map(({ file, alt, credit }) => {
+    ...images.map(({ image }) => {
+      const credit = image.credit!;
       const license = credit.licenseUrl ? `[${credit.license}](${credit.licenseUrl})` : credit.license;
-      return `| \`${file.replace('images/', '')}\` | ${cell(alt)} | ${cell(credit.author)} | ${license} | [${credit.source}](${credit.url}) |`;
+      return `| \`${image.url.replace('images/', '')}\` | ${cell(image.alt!)} | ${cell(credit.author!)} | ${license} | [${credit.source}](${credit.url}) |`;
     }),
     '',
   ].join('\n');

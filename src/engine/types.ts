@@ -1,163 +1,180 @@
-// Модель данных экспертной системы. База знаний лежит в content/quiz.json и описана этими типами.
+// Формат базы знаний: так база хранится в браузере и передаётся файлом JSON. Описание — docs/format.md.
 
-/** Атрибуты-сферы: совпадают с направлениями волонтёрства. */
-export const DIRECTION_IDS = ['children', 'inclusion', 'seniors', 'ecology'] as const;
+export const BASE_FORMAT = 'es-constructor';
+export const BASE_FORMAT_VERSION = 1;
 
-/** Атрибуты стиля: как устроена деятельность помимо сферы. */
-export const STYLE_IDS = [
-  'physical',
-  'outdoor',
-  'emotional',
-  'regular',
-  'training',
-  'leading',
-  'teaching',
-  'creative',
-  'personal',
-] as const;
-
-export const ATTRIBUTE_IDS = [...DIRECTION_IDS, ...STYLE_IDS] as const;
-
-export type DirectionId = (typeof DIRECTION_IDS)[number];
-export type StyleId = (typeof STYLE_IDS)[number];
-export type AttributeId = DirectionId | StyleId;
-
-/** Значения по всем атрибутам. */
-export type AttributeValues = Record<AttributeId, number>;
+/** Значения по атрибутам: id атрибута → число. */
+export type AttributeValues = Record<string, number>;
 
 /**
- * Веса варианта ответа — «преимущество», которое ответ даёт атрибутам (связь «параметр + атрибут»).
- * Хранятся только ненулевые: для сфер от 0 до 3, для стиля от −2 до 3.
+ * Веса варианта ответа — «преимущество», которое ответ даёт атрибутам (правило «параметр + атрибут»).
+ * Нулевые веса не хранятся.
  */
-export type Weights = Partial<Record<AttributeId, number>>;
+export type Weights = Record<string, number>;
 
 /** single — один ответ, multiple — несколько ответов. */
 export type QuestionType = 'single' | 'multiple';
 
+export interface ImageCredit {
+  author?: string;
+  title?: string;
+  /** Сайт, откуда взята картинка. */
+  source?: string;
+  /** Страница картинки на этом сайте. */
+  url?: string;
+  license?: string;
+  licenseUrl?: string;
+}
+
+/** Картинка — только ссылка: файлы в базу не встраиваются. */
+export interface ImageRef {
+  /** Адрес http(s) или относительный путь. */
+  url: string;
+  alt?: string;
+  /** CSS object-position: какую часть кадра сохранить при обрезке. */
+  position?: string;
+  credit?: ImageCredit;
+}
+
+export interface Settings {
+  /** Сколько лучших объектов показывать после каждого ответа. */
+  topCount: number;
+  /** Если второе место отстаёт меньше чем на столько процентных пунктов, оно почти равно первому. */
+  closeGap: number;
+  /** Если даже лучшая группа набрала меньше этого процента, выраженного итога нет. */
+  weakPercent: number;
+  /** Как называть группы в интерфейсе, например «Направления». */
+  groupsTitle?: string;
+  /** Подпись к итогу на экране результата, например «Твоя направленность». */
+  resultTitle?: string;
+}
+
 export interface Attribute {
-  id: AttributeId;
-  /** sphere — сфера (направление), style — стиль деятельности. */
-  group: 'sphere' | 'style';
-  title: string;
-  /** Короткое название для таблиц. */
-  short: string;
-  description: string;
-}
-
-export interface Direction {
-  id: DirectionId;
-  title: string;
-  short: string;
-  tagline: string;
-  /** Ключ картинки в content/images.json. */
-  image: string;
-  description: string;
-  activities: string[];
-  qualities: string[];
-  firstSteps: string[];
-}
-
-/** Объект ранжирования — вид волонтёрской деятельности. */
-export interface VolunteerObject {
   id: string;
-  direction: DirectionId;
+  title: string;
+  /** Короткое название для таблиц; если пусто, показывается полное. */
+  short: string;
+  description: string;
+  /** Важность атрибута при сравнении с объектами: его вес в косинусной мере. */
+  importance: number;
+}
+
+/** Необязательная группа объектов. Группа связана с атрибутом: её итог — доля баллов этого атрибута. */
+export interface Group {
+  id: string;
+  attribute: string;
   title: string;
   description: string;
-  /** Выраженность каждого атрибута у деятельности, от 0 до 3. */
-  attributes: AttributeValues;
+  tagline?: string;
+  image?: ImageRef;
+  /** «Что пригодится» на экране результата. */
+  qualities?: string[];
+  /** «С чего начать» на экране результата. */
+  firstSteps?: string[];
+}
+
+/** Объект ранжирования. */
+export interface RankedObject {
+  id: string;
+  group?: string;
+  title: string;
+  description: string;
+  /** Выраженность атрибутов у объекта, от 0 до 3. Если значения нет, оно равно 0. */
+  values: AttributeValues;
 }
 
 export interface Option {
-  /** Буква варианта: a, b, c… */
   id: string;
   text: string;
   /** Короткая формулировка для объяснения в вопросах с несколькими ответами. */
   short?: string;
-  /** Ключ картинки-превью в content/images.json. */
-  image?: string;
+  image?: ImageRef;
   /** «Ничего из этого»: снимает остальные отметки и сам снимается при выборе другого варианта. */
   exclusive?: boolean;
   weights: Weights;
-  /** Почему этот ответ говорит в пользу направления. Показывается на экране результата. */
-  reasons?: Partial<Record<DirectionId, string>>;
+  /** Почему этот ответ говорит в пользу группы: id группы → фраза. Показывается на экране результата. */
+  reasons?: Record<string, string>;
 }
 
 export interface Question {
   id: string;
-  type: QuestionType;
-  /** Ситуационная задача: проверяет, как человек поступит в типичной ситуации направления. */
-  situational?: boolean;
   /** Название параметра, под которым ответ хранится в рабочей базе данных. */
   parameter: string;
   text: string;
-  /** Ключ картинки в content/images.json. */
-  image: string;
-  /** Обоснование весов — для документации. */
+  type: QuestionType;
+  /** Ситуационная задача: проверяет, как человек поступит в типичной ситуации. */
+  situational?: boolean;
+  image?: ImageRef;
+  /** Обоснование весов — для автора базы и документации. */
   note: string;
   /**
-   * Общее объяснение для вопроса с несколькими ответами: {options} заменяется
-   * списком коротких формулировок выбранных вариантов.
+   * Общее объяснение для вопроса с несколькими ответами: id группы → шаблон,
+   * {options} заменяется списком коротких формулировок выбранных вариантов.
    */
-  reasonTemplate?: Partial<Record<DirectionId, string>>;
+  reasonTemplate?: Record<string, string>;
   options: Option[];
 }
 
 export interface Block {
   id: string;
-  /** Направление блока. У общего блока его нет. */
-  direction?: DirectionId;
+  /** Группа блока. Блоки без группы — общие: при равенстве процентов побеждает группа, набравшая больше в них. */
+  group?: string;
   title: string;
   description: string;
   questions: Question[];
 }
 
-/** Правило «параметр + параметр»: ЕСЛИ у параметра такое значение, ТО другой параметр получает значение. */
+export interface Condition {
+  question: string;
+  option: string;
+}
+
+/** Правило «параметр + параметр»: ЕСЛИ выполнены все условия, ТО другой параметр получает значение. */
 export interface Rule {
   id: string;
   /** Короткое обозначение для интерфейса: П1, П2… */
   title: string;
-  if: { question: string; option: string };
-  then: { question: string; option: string };
+  /** Условия через И. ИЛИ — это два правила. Все условия стоят раньше выводимого вопроса. */
+  if: Condition[];
+  then: Condition;
   note: string;
-}
-
-export interface Quiz {
-  version: number;
-  title: string;
-  subtitle: string;
-  description: string;
-  estimatedMinutes: number;
-  /** Ключ картинки для стартового экрана. */
-  image: string;
-  attributes: Attribute[];
-  directions: Direction[];
-  objects: VolunteerObject[];
-  rules: Rule[];
-  blocks: Block[];
 }
 
 /** Ответы пользователя: id вопроса → id выбранных вариантов. */
 export type Answers = Record<string, string[]>;
 
-export interface ImageCredit {
-  author: string;
+/** Тестовый профиль: выдуманный человек с ответами и тем, что система должна ему показать. */
+export interface TestProfile {
+  name: string;
+  story?: string;
+  /** Вопросы, значение которых выводит правило, можно не указывать. */
+  answers: Answers;
+  /** Итог должен быть одной из этих групп. */
+  expectGroup?: string[];
+  /** Хотя бы один из этих объектов должен попасть в тройку лидеров. */
+  expectTop?: string[];
+  /** Второе место должно быть почти равным первому (или не должно). */
+  expectClose?: boolean;
+  /** Итог должен быть слабо выраженным (или не должен). */
+  expectWeak?: boolean;
+}
+
+export interface KnowledgeBase {
+  format: typeof BASE_FORMAT;
+  formatVersion: number;
   title: string;
-  /** Сайт, откуда взято фото. */
-  source: string;
-  /** Страница фото на этом сайте. */
-  url: string;
-  license: string;
-  licenseUrl?: string;
+  subtitle: string;
+  description: string;
+  author: string;
+  /** Общее примечание об источниках картинок: показывается на экране с авторами. */
+  imagesNote?: string;
+  image?: ImageRef;
+  settings: Settings;
+  attributes: Attribute[];
+  /** Группы необязательны: без них есть только рейтинг объектов. */
+  groups: Group[];
+  objects: RankedObject[];
+  blocks: Block[];
+  rules: Rule[];
+  testProfiles: TestProfile[];
 }
-
-/** Фото из content/images.json. */
-export interface ImageInfo {
-  /** Путь относительно папки public. */
-  file: string;
-  alt: string;
-  /** CSS object-position: какую часть кадра сохранить при обрезке. */
-  position: string;
-  credit: ImageCredit;
-}
-
-export type Images = Record<string, ImageInfo>;

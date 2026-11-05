@@ -1,8 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
-import { SPHERE_WEIGHT } from '../engine/scoring.ts';
-import { ATTRIBUTE_IDS } from '../engine/types.ts';
+import { attributeLabel, level } from '../engine/scoring.ts';
 import type { Weights } from '../engine/types.ts';
-import { attributeById, attributeRuleList, attributeRuleOf, directionById, quiz, ruleCount, steps } from '../data.ts';
+import { attributeById, attributeRuleList, attributeRuleOf, groupById, quiz, ruleCount, steps } from '../data.ts';
 import { plural } from '../plural.ts';
 
 type Tab = 'objects' | 'attributes' | 'parameters' | 'rules';
@@ -36,7 +35,7 @@ export function KnowledgeBaseScreen({ onClose }: KnowledgeBaseScreenProps) {
         База знаний
       </h1>
       <p className="page__lead">
-        База знаний хранится отдельно от программы, в файле <code>content/quiz.json</code>: объекты ранжирования с
+        База знаний хранится отдельно от программы, в файле <code>content/example.json</code>: объекты ранжирования с
         атрибутами, вопросы-параметры и {plural(ruleCount, ['правило', 'правила', 'правил'])} двух видов — «параметр +
         атрибут» и «параметр + параметр». Система читает её при запуске, поэтому базу можно менять, не трогая код.
       </p>
@@ -89,9 +88,9 @@ function ObjectsTab() {
               <th scope="col" className="kb-table__name">
                 Вид деятельности
               </th>
-              {ATTRIBUTE_IDS.map((id) => (
-                <th key={id} scope="col" className="kb-table__attr" title={attributeById[id].title}>
-                  {attributeById[id].short}
+              {quiz.attributes.map((attribute) => (
+                <th key={attribute.id} scope="col" className="kb-table__attr" title={attribute.title}>
+                  {attributeLabel(attribute)}
                 </th>
               ))}
             </tr>
@@ -102,11 +101,11 @@ function ObjectsTab() {
                 <td>{i + 1}</td>
                 <th scope="row" className="kb-table__name">
                   {object.title}
-                  <span className="kb-table__sub">{directionById[object.direction].title}</span>
+                  {object.group && <span className="kb-table__sub">{groupById[object.group]?.title}</span>}
                 </th>
-                {ATTRIBUTE_IDS.map((id) => (
-                  <td key={id} className={`lvl lvl--${object.attributes[id]}`}>
-                    {object.attributes[id]}
+                {quiz.attributes.map(({ id }) => (
+                  <td key={id} className={`lvl lvl--${level(object, id)}`}>
+                    {level(object, id)}
                   </td>
                 ))}
               </tr>
@@ -145,7 +144,7 @@ function AttributesTab() {
                   <code>{attribute.id}</code>
                 </span>
               </th>
-              <td>{attribute.group === 'sphere' ? `Сфера, вес ${SPHERE_WEIGHT}` : 'Стиль, вес 1'}</td>
+              <td>{quiz.groups.some((g) => g.attribute === attribute.id) ? `Сфера, вес ${attribute.importance}` : `Стиль, вес ${attribute.importance}`}</td>
               <td>{attribute.description}</td>
             </tr>
           ))}
@@ -202,14 +201,14 @@ function ParametersTab() {
 }
 
 function WeightChips({ weights }: { weights: Weights }) {
-  const ids = ATTRIBUTE_IDS.filter((id) => weights[id]);
+  const ids = quiz.attributes.map((a) => a.id).filter((id) => weights[id]);
   if (ids.length === 0) return <span className="params__none">правила нет — баллов не даёт</span>;
   return (
     <span className="params__weights">
       {ids.map((id) => (
-        <span key={id} className={weights[id]! > 0 ? 'point point--plus' : 'point point--minus'}>
-          {attributeById[id].short} {weights[id]! > 0 ? '+' : '−'}
-          {Math.abs(weights[id]!)}
+        <span key={id} className={weights[id] > 0 ? 'point point--plus' : 'point point--minus'}>
+          {attributeLabel(attributeById[id])} {weights[id] > 0 ? '+' : '−'}
+          {Math.abs(weights[id])}
         </span>
       ))}
     </span>
@@ -284,14 +283,18 @@ function RulesTab() {
         </p>
         <ol className="rules">
           {quiz.rules.map((rule) => {
-            const source = find(rule.if.question, rule.if.option);
             const target = find(rule.then.question, rule.then.option);
             return (
               <li key={rule.id} className="rule">
                 <span className="rule__title">{rule.title}</span>
-                <p className="rule__line">
-                  <span className="rule__keyword">ЕСЛИ</span> «{source.question.parameter}» = «{source.option.text}»
-                </p>
+                {rule.if.map((condition, index) => {
+                  const source = find(condition.question, condition.option);
+                  return (
+                    <p key={`${condition.question}/${condition.option}`} className="rule__line">
+                      <span className="rule__keyword">{index === 0 ? 'ЕСЛИ' : 'И'}</span> «{source.question.parameter}» = «{source.option.text}»
+                    </p>
+                  );
+                })}
                 <p className="rule__line">
                   <span className="rule__keyword">ТО</span> «{target.question.parameter}» = «{target.option.text}»
                 </p>

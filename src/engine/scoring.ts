@@ -1,46 +1,42 @@
 // Механизм логического вывода экспертной системы.
 //   1. Правила «параметр + параметр» выводят значения части параметров из ответов пользователя.
-//   2. Связи «параметр + атрибут» превращают ответы в профиль предпочтений по 13 атрибутам.
-//   3. Объекты ранжируются по совпадению своих атрибутов с профилем, а атрибуты-сферы профиля
-//      дают итоговую направленность.
+//   2. Правила «параметр + атрибут» превращают ответы в профиль предпочтений по атрибутам базы.
+//   3. Объекты ранжируются по совпадению своих атрибутов с профилем. Если в базе есть группы,
+//      доли баллов их атрибутов дают итог.
 // Файл без зависимостей от React, чтобы его можно было запускать из скриптов проверки.
 
-import { ATTRIBUTE_IDS } from './types.ts';
 import type {
   Answers,
-  AttributeId,
+  Attribute,
   AttributeValues,
-  Direction,
-  DirectionId,
+  Group,
+  KnowledgeBase,
   Option,
   Question,
-  Quiz,
+  RankedObject,
   Rule,
-  VolunteerObject,
 } from './types.ts';
 
-/** Если даже лучшее направление набрало меньше этого процента, выраженной склонности нет. */
-export const WEAK_PERCENT = 50;
-
-/** Если второе место отстаёт меньше чем на столько процентных пунктов, оно почти равно первому. */
-export const CLOSE_GAP = 10;
-
-/** Сколько лучших объектов показывать после каждого ответа. */
-export const TOP_COUNT = 5;
-
-/** Вес атрибутов-сфер в сравнении с объектами: сфера важнее отдельной черты стиля. */
-export const SPHERE_WEIGHT = 2;
-
-export function zeroValues(): AttributeValues {
-  return Object.fromEntries(ATTRIBUTE_IDS.map((id) => [id, 0])) as AttributeValues;
+export function zeroValues(base: KnowledgeBase): AttributeValues {
+  return Object.fromEntries(base.attributes.map((attribute) => [attribute.id, 0]));
 }
 
-export function weight(option: Option, attribute: AttributeId): number {
+export function weight(option: Option, attribute: string): number {
   return option.weights[attribute] ?? 0;
 }
 
-export function allQuestions(quiz: Quiz): Question[] {
-  return quiz.blocks.flatMap((block) => block.questions);
+/** Выраженность атрибута у объекта. Если значения нет, оно равно 0. */
+export function level(object: RankedObject, attribute: string): number {
+  return object.values[attribute] ?? 0;
+}
+
+/** Короткое название атрибута для таблиц и подписей. */
+export function attributeLabel(attribute: Attribute): string {
+  return attribute.short || attribute.title;
+}
+
+export function allQuestions(base: KnowledgeBase): Question[] {
+  return base.blocks.flatMap((block) => block.questions);
 }
 
 /** Правило «параметр + атрибут»: ЕСЛИ параметр получил значение ТО атрибутам даётся «преимущество». */
@@ -50,7 +46,7 @@ export interface AttributeRule {
   question: Question;
   option: Option;
   /** Заключения правила: атрибут и вес, в порядке атрибутов. */
-  effects: { attribute: AttributeId; weight: number }[];
+  effects: { attribute: string; weight: number }[];
 }
 
 /**
@@ -58,11 +54,13 @@ export interface AttributeRule {
  * с одним или несколькими заключениями. Варианты без весов (отказы, ошибочные решения ситуационных задач)
  * правил не дают.
  */
-export function attributeRules(quiz: Quiz): AttributeRule[] {
+export function attributeRules(base: KnowledgeBase): AttributeRule[] {
   const rules: AttributeRule[] = [];
-  for (const question of allQuestions(quiz)) {
+  for (const question of allQuestions(base)) {
     for (const option of question.options) {
-      const effects = ATTRIBUTE_IDS.filter((id) => weight(option, id) !== 0).map((id) => ({ attribute: id, weight: weight(option, id) }));
+      const effects = base.attributes
+        .filter(({ id }) => weight(option, id) !== 0)
+        .map(({ id }) => ({ attribute: id, weight: weight(option, id) }));
       if (effects.length > 0) rules.push({ title: `А${rules.length + 1}`, question, option, effects });
     }
   }
@@ -97,47 +95,56 @@ export interface Inference {
 }
 
 /**
- * Прямой вывод: пока есть правило, условие которого выполнено, а заключение ещё не выведено,
- * применяем его. Выведенное значение заменяет ответ пользователя на тот же вопрос, если он был
- * (например, пользователь вернулся назад и изменил ответ-условие).
+ * Прямой вывод. Условия правила стоят раньше выводимого вопроса, поэтому хватает одного прохода по вопросам:
+ * когда очередь доходит до вопроса, значения всех его условий уже окончательные, в том числе выведенные
+ * другими правилами (так работают цепочки). Если сработало несколько правил, берётся первое по порядку в базе.
+ * Выведенное значение заменяет ответ пользователя на тот же вопрос, если он был (например, пользователь
+ * вернулся назад и изменил ответ-условие).
  */
-export function infer(quiz: Quiz, answers: Answers): Inference {
+export function infer(base: KnowledgeBase, answers: Answers): Inference {
   const effective: Answers = { ...answers };
   const inferred = new Map<string, Rule>();
-  let changed = true;
-  while (changed) {
-    changed = false;
-    for (const rule of quiz.rules) {
-      if (inferred.has(rule.then.question)) continue;
-      if (!(effective[rule.if.question] ?? []).includes(rule.if.option)) continue;
-      effective[rule.then.question] = [rule.then.option];
-      inferred.set(rule.then.question, rule);
-      changed = true;
+  if (base.rules.length === 0) return { answers: effective, inferred };
+
+  const byTarget = new Map<string, Rule[]>();
+  for (const rule of base.rules) {
+    const rules = byTarget.get(rule.then.question);
+    if (rules) rules.push(rule);
+    else byTarget.set(rule.then.question, [rule]);
+  }
+  for (const question of allQuestions(base)) {
+    const fired = byTarget
+      .get(question.id)
+      ?.find((rule) => rule.if.every((condition) => (effective[condition.question] ?? []).includes(condition.option)));
+    if (fired) {
+      effective[question.id] = [fired.then.option];
+      inferred.set(question.id, fired);
     }
   }
   return { answers: effective, inferred };
 }
 
 /** Вопросы, которые задаются пользователю: все, кроме выведенных правилами. */
-export function askedQuestions(quiz: Quiz, answers: Answers): Question[] {
-  const { inferred } = infer(quiz, answers);
-  return allQuestions(quiz).filter((question) => !inferred.has(question.id));
+export function askedQuestions(base: KnowledgeBase, answers: Answers): Question[] {
+  const { inferred } = infer(base, answers);
+  return allQuestions(base).filter((question) => !inferred.has(question.id));
 }
 
 /** Все параметры получены: от пользователя или выведены правилами. */
-export function isComplete(quiz: Quiz, answers: Answers): boolean {
-  const { answers: effective } = infer(quiz, answers);
-  return allQuestions(quiz).every((question) => selectedOptions(question, effective).length > 0);
+export function isComplete(base: KnowledgeBase, answers: Answers): boolean {
+  const { answers: effective } = infer(base, answers);
+  return allQuestions(base).every((question) => selectedOptions(question, effective).length > 0);
 }
 
-// ---------- 2. Связи «параметр + атрибут»: профиль предпочтений ----------
+// ---------- 2. Правила «параметр + атрибут»: профиль предпочтений ----------
 
 /**
  * Наименьшая и наибольшая сумма, которую вопрос может дать атрибуту: в вопросе с одним ответом —
  * наименьший и наибольший вес среди вариантов, с несколькими — сумма отрицательных и сумма положительных.
  */
-export function questionBounds(question: Question, attribute: AttributeId): [number, number] {
+export function questionBounds(question: Question, attribute: string): [number, number] {
   const weights = question.options.map((option) => weight(option, attribute));
+  if (weights.length === 0) return [0, 0];
   if (question.type === 'single') return [Math.min(...weights), Math.max(...weights)];
   return [
     weights.filter((w) => w < 0).reduce((sum, w) => sum + w, 0),
@@ -158,22 +165,22 @@ export interface Profile {
   preference: AttributeValues;
 }
 
-export function buildProfile(quiz: Quiz, effective: Answers, questions = allQuestions(quiz)): Profile {
-  const points = zeroValues();
-  const low = zeroValues();
-  const high = zeroValues();
-  const preference = zeroValues();
+export function buildProfile(base: KnowledgeBase, effective: Answers, questions = allQuestions(base)): Profile {
+  const points = zeroValues(base);
+  const low = zeroValues(base);
+  const high = zeroValues(base);
+  const preference = zeroValues(base);
   for (const question of questions) {
     const chosen = selectedOptions(question, effective);
     if (chosen.length === 0) continue;
-    for (const id of ATTRIBUTE_IDS) {
+    for (const { id } of base.attributes) {
       const [min, max] = questionBounds(question, id);
       low[id] += min;
       high[id] += max;
       for (const option of chosen) points[id] += weight(option, id);
     }
   }
-  for (const id of ATTRIBUTE_IDS) {
+  for (const { id } of base.attributes) {
     const span = high[id] - low[id];
     preference[id] = span > 0 ? (2 * (points[id] - low[id])) / span - 1 : 0;
   }
@@ -183,7 +190,7 @@ export function buildProfile(quiz: Quiz, effective: Answers, questions = allQues
 // ---------- 3. Ранжирование объектов ----------
 
 export interface Contribution {
-  attribute: AttributeId;
+  attribute: string;
   /** Выраженность атрибута у объекта, 0–3. */
   level: number;
   /** Предпочтение пользователя по атрибуту, от −1 до 1. */
@@ -193,12 +200,12 @@ export interface Contribution {
 }
 
 export interface ObjectScore {
-  object: VolunteerObject;
+  object: RankedObject;
   /** Косинус угла между профилем пользователя и атрибутами объекта, от −1 до 1. */
   cosine: number;
   /**
-   * Совпадение от 0 до 1: (1 + cosine) / 2. 1 — деятельность в точности такая, как хочет пользователь,
-   * 0,5 — не связана с его предпочтениями, меньше 0,5 — её свойства скорее противоречат ответам.
+   * Совпадение от 0 до 1: (1 + cosine) / 2. 1 — объект в точности такой, как хочет пользователь,
+   * 0,5 — не связан с его предпочтениями, меньше 0,5 — его свойства скорее противоречат ответам.
    */
   score: number;
   /** Место в рейтинге, начиная с 1. */
@@ -207,28 +214,26 @@ export interface ObjectScore {
   contributions: Contribution[];
 }
 
-export function attributeWeight(quiz: Quiz, id: AttributeId): number {
-  return quiz.attributes.find((a) => a.id === id)?.group === 'sphere' ? SPHERE_WEIGHT : 1;
-}
-
 /**
  * Совпадение объекта с профилем. Сначала считается косинусная мера сходства векторов: предпочтений
- * пользователя (от −1 до 1) и выраженности атрибутов объекта (от 0 до 3), где сферы идут с весом
- * SPHERE_WEIGHT. Косинус лежит от −1 до 1, поэтому для показа он переводится в шкалу от 0 до 1:
+ * пользователя (от −1 до 1) и выраженности атрибутов объекта (от 0 до 3), где каждый атрибут идёт со своей
+ * важностью. Косинус лежит от −1 до 1, поэтому для показа он переводится в шкалу от 0 до 1:
  * (1 + cosine) / 2. Перевод линейный, так что порядок объектов от него не зависит.
  */
-export function rankObjects(quiz: Quiz, preference: AttributeValues): ObjectScore[] {
-  const w = Object.fromEntries(ATTRIBUTE_IDS.map((id) => [id, attributeWeight(quiz, id)])) as AttributeValues;
-  const preferenceNorm = Math.sqrt(ATTRIBUTE_IDS.reduce((sum, id) => sum + w[id] * preference[id] ** 2, 0));
-  const scored = quiz.objects.map((object) => {
-    const objectNorm = Math.sqrt(ATTRIBUTE_IDS.reduce((sum, id) => sum + w[id] * object.attributes[id] ** 2, 0));
+export function rankObjects(base: KnowledgeBase, preference: AttributeValues): ObjectScore[] {
+  const attributes = base.attributes;
+  const preferenceNorm = Math.sqrt(attributes.reduce((sum, { id, importance }) => sum + importance * preference[id] ** 2, 0));
+  const scored = base.objects.map((object) => {
+    const objectNorm = Math.sqrt(attributes.reduce((sum, { id, importance }) => sum + importance * level(object, id) ** 2, 0));
     const norm = preferenceNorm * objectNorm;
-    const contributions = ATTRIBUTE_IDS.filter((id) => object.attributes[id] > 0).map((id) => ({
-      attribute: id,
-      level: object.attributes[id],
-      preference: preference[id],
-      value: norm > 0 ? (w[id] * preference[id] * object.attributes[id]) / norm : 0,
-    }));
+    const contributions = attributes
+      .filter(({ id }) => level(object, id) > 0)
+      .map(({ id, importance }) => ({
+        attribute: id,
+        level: level(object, id),
+        preference: preference[id],
+        value: norm > 0 ? (importance * preference[id] * level(object, id)) / norm : 0,
+      }));
     const cosine = contributions.reduce((sum, c) => sum + c.value, 0);
     contributions.sort((a, b) => b.value - a.value);
     return { object, cosine, score: (1 + cosine) / 2, rank: 0, contributions };
@@ -240,18 +245,18 @@ export function rankObjects(quiz: Quiz, preference: AttributeValues): ObjectScor
 }
 
 /** Рейтинг объектов по текущим ответам — то, что показывается после каждого ответа. */
-export function liveRanking(quiz: Quiz, answers: Answers): ObjectScore[] {
-  const { answers: effective } = infer(quiz, answers);
-  return rankObjects(quiz, buildProfile(quiz, effective).preference);
+export function liveRanking(base: KnowledgeBase, answers: Answers): ObjectScore[] {
+  const { answers: effective } = infer(base, answers);
+  return rankObjects(base, buildProfile(base, effective).preference);
 }
 
-// ---------- Итог: направленность ----------
+// ---------- Итог по группам ----------
 
 /** M — максимальная сумма баллов по каждому атрибуту при ответах на все вопросы. */
-export function maxScores(quiz: Quiz): AttributeValues {
-  const max = zeroValues();
-  for (const question of allQuestions(quiz)) {
-    for (const id of ATTRIBUTE_IDS) max[id] += questionBounds(question, id)[1];
+export function maxScores(base: KnowledgeBase): AttributeValues {
+  const max = zeroValues(base);
+  for (const question of allQuestions(base)) {
+    for (const { id } of base.attributes) max[id] += questionBounds(question, id)[1];
   }
   return max;
 }
@@ -265,25 +270,25 @@ export interface QuestionBreakdown {
 }
 
 /** Сколько баллов каждый параметр дал каждому атрибуту — для подробного расчёта. */
-export function breakdown(quiz: Quiz, answers: Answers): QuestionBreakdown[] {
-  const { answers: effective, inferred } = infer(quiz, answers);
-  return allQuestions(quiz).map((question) => {
+export function breakdown(base: KnowledgeBase, answers: Answers): QuestionBreakdown[] {
+  const { answers: effective, inferred } = infer(base, answers);
+  return allQuestions(base).map((question) => {
     const selected = selectedOptions(question, effective);
-    const points = zeroValues();
+    const points = zeroValues(base);
     for (const option of selected) {
-      for (const id of ATTRIBUTE_IDS) points[id] += weight(option, id);
+      for (const { id } of base.attributes) points[id] += weight(option, id);
     }
     return { question, selected, points, rule: inferred.get(question.id) };
   });
 }
 
-export interface DirectionScore {
-  direction: Direction;
+export interface GroupScore {
+  group: Group;
   points: number;
   max: number;
   /** Доля от максимума в процентах, без округления. */
   percent: number;
-  /** Баллы из общего блока — решают при равенстве процентов. */
+  /** Баллы из общих блоков — решают при равенстве процентов. */
   generalPoints: number;
 }
 
@@ -293,40 +298,60 @@ export interface Reason {
   text: string;
 }
 
-export interface Evaluation {
-  /** Направления от самого подходящего к наименее подходящему. */
-  ranking: DirectionScore[];
-  winner: DirectionScore;
-  runnerUp: DirectionScore;
-  /** Второе место отстаёт меньше чем на CLOSE_GAP п. п. */
+/** Итог по группам; есть, только если в базе заданы группы. */
+export interface Verdict {
+  /** Группы от самой подходящей к наименее подходящей. */
+  ranking: GroupScore[];
+  winner: GroupScore;
+  /** Второго места нет, если группа одна. */
+  runnerUp?: GroupScore;
+  /** Второе место отстаёт меньше чем на closeGap п. п. */
   isClose: boolean;
-  /** Лучшее направление набрало меньше WEAK_PERCENT % максимума. */
+  /** Лучшая группа набрала меньше weakPercent % максимума. */
   isWeak: boolean;
-  /** Самые весомые ответы в пользу победившего направления. */
+  /** Самые весомые ответы в пользу победившей группы. */
   reasons: Reason[];
+}
+
+export interface Evaluation {
+  verdict: Verdict | null;
   /** Все объекты по рангу. */
   objects: ObjectScore[];
   profile: Profile;
   inferred: Map<string, Rule>;
 }
 
-export function evaluate(quiz: Quiz, answers: Answers): Evaluation {
-  const { answers: effective, inferred } = infer(quiz, answers);
-  const profile = buildProfile(quiz, effective);
-  const max = maxScores(quiz);
-  const generalQuestions = quiz.blocks.filter((block) => !block.direction).flatMap((block) => block.questions);
-  const general = buildProfile(quiz, effective, generalQuestions).points;
+export function evaluate(base: KnowledgeBase, answers: Answers): Evaluation {
+  const { answers: effective, inferred } = infer(base, answers);
+  const profile = buildProfile(base, effective);
+  return {
+    verdict: groupVerdict(base, effective, profile),
+    objects: rankObjects(base, profile.preference),
+    profile,
+    inferred,
+  };
+}
 
-  // Больший процент выигрывает; при равенстве — больше баллов в общем блоке (там человек
-  // сам выбирает между сферами); дальше — порядок направлений в базе знаний (сортировка стабильная).
-  const ranking = quiz.directions
-    .map((direction) => ({
-      direction,
-      points: profile.points[direction.id],
-      max: max[direction.id],
-      percent: max[direction.id] > 0 ? (profile.points[direction.id] / max[direction.id]) * 100 : 0,
-      generalPoints: general[direction.id],
-    }))
+function groupVerdict(base: KnowledgeBase, effective: Answers, profile: Profile): Verdict | null {
+  if (base.groups.length === 0) return null;
+  const max = maxScores(base);
+  const generalQuestions = base.blocks.filter((block) => !block.group).flatMap((block) => block.questions);
+  const general = buildProfile(base, effective, generalQuestions).points;
+
+  // Больший процент выигрывает; при равенстве — больше баллов в общих блоках (там человек
+  // сам выбирает между группами); дальше — порядок групп в базе знаний (сортировка стабильная).
+  const ranking = base.groups
+    .map((group) => {
+      const points = profile.points[group.attribute] ?? 0;
+      const groupMax = max[group.attribute] ?? 0;
+      return {
+        group,
+        points,
+        max: groupMax,
+        percent: groupMax > 0 ? (points / groupMax) * 100 : 0,
+        generalPoints: general[group.attribute] ?? 0,
+      };
+    })
     .sort((a, b) => b.percent - a.percent || b.generalPoints - a.generalPoints);
 
   const [winner, runnerUp] = ranking;
@@ -334,34 +359,32 @@ export function evaluate(quiz: Quiz, answers: Answers): Evaluation {
     ranking,
     winner,
     runnerUp,
-    isClose: winner.percent - runnerUp.percent < CLOSE_GAP,
-    isWeak: winner.percent < WEAK_PERCENT,
-    reasons: explain(quiz, effective, winner.direction.id),
-    objects: rankObjects(quiz, profile.preference),
-    profile,
-    inferred,
+    isClose: runnerUp !== undefined && winner.percent - runnerUp.percent < base.settings.closeGap,
+    isWeak: winner.percent < base.settings.weakPercent,
+    reasons: explain(base, effective, winner.group),
   };
 }
 
-/** Какие ответы сильнее всего говорят в пользу направления — подсистема объяснений. */
-export function explain(quiz: Quiz, effective: Answers, direction: DirectionId, limit = 5): Reason[] {
+/** Какие ответы сильнее всего говорят в пользу группы — подсистема объяснений. */
+export function explain(base: KnowledgeBase, effective: Answers, group: Group, limit = 5): Reason[] {
   const reasons: Reason[] = [];
-  for (const question of allQuestions(quiz)) {
-    const chosen = selectedOptions(question, effective).filter((option) => weight(option, direction) > 0);
+  for (const question of allQuestions(base)) {
+    const chosen = selectedOptions(question, effective).filter((option) => weight(option, group.attribute) > 0);
     if (chosen.length === 0) continue;
 
-    const template = question.reasonTemplate?.[direction];
+    const template = question.reasonTemplate?.[group.id];
     if (template) {
+      const list = chosen.map((option) => option.short || option.text).join(', ');
       reasons.push({
         questionId: question.id,
-        points: chosen.reduce((sum, option) => sum + weight(option, direction), 0),
-        text: template.replace('{options}', chosen.map((option) => option.short ?? option.text).join(', ')),
+        points: chosen.reduce((sum, option) => sum + weight(option, group.attribute), 0),
+        text: template.replace('{options}', () => list),
       });
       continue;
     }
     for (const option of chosen) {
-      const text = option.reasons?.[direction];
-      if (text) reasons.push({ questionId: question.id, points: weight(option, direction), text });
+      const text = option.reasons?.[group.id];
+      if (text) reasons.push({ questionId: question.id, points: weight(option, group.attribute), text });
     }
   }
   // Сначала самые весомые ответы, при равных баллах — в порядке вопросов (сортировка стабильная).

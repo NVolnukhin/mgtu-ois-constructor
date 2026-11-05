@@ -8,7 +8,7 @@
     "node": ">=22.18"
   },
   "scripts": {
-    "check": "node scripts/check-quiz.ts",
+    "check": "node scripts/check-example.ts",
     "docs": "node scripts/build-docs.ts",
     "typecheck": "tsc -b",
     "dev": "vite",

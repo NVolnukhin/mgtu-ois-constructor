@@ -1,11 +1,17 @@
 import { useEffect, useRef } from 'react';
-import { image, images } from '../data.ts';
+import { baseImages, isSafeLinkUrl } from '../engine/images.ts';
+import { quiz } from '../data.ts';
 
 interface CreditsScreenProps {
   onClose: () => void;
 }
 
 export function CreditsScreen({ onClose }: CreditsScreenProps) {
+  const seen = new Set<string>();
+  const images = baseImages(quiz)
+    .map(({ image }) => image)
+    .filter((image) => image.credit && !seen.has(image.url) && seen.add(image.url));
+
   const titleRef = useRef<HTMLHeadingElement>(null);
 
   useEffect(() => {
@@ -17,35 +23,30 @@ export function CreditsScreen({ onClose }: CreditsScreenProps) {
       <h1 ref={titleRef} tabIndex={-1} className="credits__title">
         Фотографии
       </h1>
-      <p className="credits__lead">
-        Все фото взяты с Wikimedia Commons и Flickr под свободными лицензиями. Для сайта они обрезаны и уменьшены.
-      </p>
+      {quiz.imagesNote && <p className="credits__lead">{quiz.imagesNote}</p>}
       <ul className="credits__list">
-        {Object.keys(images).map((key) => {
-          const { src, alt, credit } = image(key);
-          return (
-            <li key={key} className="credit">
-              <img className="credit__thumb" src={src} alt="" width={96} height={64} loading="lazy" decoding="async" />
-              <div className="credit__text">
-                <p className="credit__alt">{alt}</p>
-                <p className="credit__meta">
-                  {credit.author} ·{' '}
-                  {credit.licenseUrl ? (
-                    <a href={credit.licenseUrl} target="_blank" rel="noreferrer">
-                      {credit.license}
-                    </a>
-                  ) : (
-                    credit.license
-                  )}{' '}
-                  ·{' '}
-                  <a href={credit.url} target="_blank" rel="noreferrer">
-                    {credit.source}
-                  </a>
-                </p>
-              </div>
-            </li>
-          );
-        })}
+        {images.map(({ url, alt, credit }) => (
+          <li key={url} className="credit">
+            <img className="credit__thumb" src={url} alt="" width={96} height={64} loading="lazy" decoding="async" referrerPolicy="no-referrer" />
+            <div className="credit__text">
+              {alt && <p className="credit__alt">{alt}</p>}
+              <p className="credit__meta">
+                {[
+                  credit?.author,
+                  <ExternalLink key="license" url={credit?.licenseUrl} text={credit?.license} />,
+                  <ExternalLink key="source" url={credit?.url} text={credit?.source ?? credit?.title} />,
+                ]
+                  .filter(Boolean)
+                  .map((part, index) => (
+                    <span key={index}>
+                      {index > 0 && ' · '}
+                      {part}
+                    </span>
+                  ))}
+              </p>
+            </div>
+          </li>
+        ))}
       </ul>
       <div className="actions">
         <button type="button" className="btn btn--secondary" onClick={onClose}>
@@ -53,5 +54,15 @@ export function CreditsScreen({ onClose }: CreditsScreenProps) {
         </button>
       </div>
     </article>
+  );
+}
+
+/** Ссылка, если у неё безопасный адрес; иначе просто текст. */
+function ExternalLink({ url, text }: { url?: string; text?: string }) {
+  if (!url || !isSafeLinkUrl(url)) return <>{text}</>;
+  return (
+    <a href={url} target="_blank" rel="noreferrer">
+      {text ?? url}
+    </a>
   );
 }

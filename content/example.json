@@ -1,0 +1,3419 @@
+{
+  "format": "es-constructor",
+  "formatVersion": 1,
+  "title": "Определение волонтерской направленности личности",
+  "subtitle": "Онлайн-тест",
+  "description": "Вопросы о мотивах, опыте и характере. После каждого ответа система пересчитывает рейтинг видов волонтёрской деятельности, а в конце показывает твою направленность и объясняет, почему она подходит.",
+  "author": "Волнухин Никита, СГН3-72Б",
+  "imagesNote": "Все фото взяты с Wikimedia Commons и Flickr под свободными лицензиями. Для сайта они обрезаны и уменьшены.",
+  "image": {
+    "url": "images/hero.webp",
+    "alt": "Волонтёры зимней Олимпиады в Сочи улыбаются и показывают большой палец",
+    "position": "50% 30%",
+    "credit": {
+      "author": "Atos",
+      "title": "Volunteers (12515949924)",
+      "source": "Wikimedia Commons",
+      "url": "https://commons.wikimedia.org/wiki/File:Volunteers_(12515949924).jpg",
+      "license": "CC BY-SA 2.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/2.0/"
+    }
+  },
+  "settings": {
+    "topCount": 5,
+    "closeGap": 10,
+    "weakPercent": 50,
+    "groupsTitle": "Направления",
+    "resultTitle": "Твоя направленность"
+  },
+  "attributes": [
+    {
+      "id": "children",
+      "title": "Дети и подростки",
+      "short": "Дети",
+      "description": "Насколько деятельность связана с детьми и подростками.",
+      "importance": 2
+    },
+    {
+      "id": "inclusion",
+      "title": "Люди с инвалидностью",
+      "short": "Инклюзия",
+      "description": "Насколько деятельность связана с людьми с инвалидностью.",
+      "importance": 2
+    },
+    {
+      "id": "seniors",
+      "title": "Старшее поколение",
+      "short": "Старшие",
+      "description": "Насколько деятельность связана с пожилыми людьми.",
+      "importance": 2
+    },
+    {
+      "id": "ecology",
+      "title": "Экология",
+      "short": "Экология",
+      "description": "Насколько деятельность связана с природой и окружающей средой.",
+      "importance": 2
+    },
+    {
+      "id": "physical",
+      "title": "Физическая нагрузка",
+      "short": "Нагрузка",
+      "description": "0 — сидячая работа, 3 — нужно носить тяжёлое, копать, много ходить.",
+      "importance": 1
+    },
+    {
+      "id": "outdoor",
+      "title": "Работа на улице",
+      "short": "Улица",
+      "description": "0 — только в помещении, 3 — почти всё время на улице в любую погоду.",
+      "importance": 1
+    },
+    {
+      "id": "emotional",
+      "title": "Эмоциональная нагрузка",
+      "short": "Эмоции",
+      "description": "0 — лёгкая атмосфера, 3 — рядом болезни, утраты, детские травмы.",
+      "importance": 1
+    },
+    {
+      "id": "regular",
+      "title": "Регулярность",
+      "short": "Регулярность",
+      "description": "0 — разовые акции, 3 — встречи каждую неделю на протяжении месяцев.",
+      "importance": 1
+    },
+    {
+      "id": "training",
+      "title": "Специальная подготовка",
+      "short": "Подготовка",
+      "description": "0 — можно начать сразу, 3 — без курса или особого навыка не обойтись.",
+      "importance": 1
+    },
+    {
+      "id": "leading",
+      "title": "Организация и лидерство",
+      "short": "Лидерство",
+      "description": "0 — выполняешь задачи, 3 — ведёшь группу и организуешь процесс.",
+      "importance": 1
+    },
+    {
+      "id": "teaching",
+      "title": "Обучение и объяснение",
+      "short": "Обучение",
+      "description": "0 — учить никого не нужно, 3 — основная задача — объяснять и учить.",
+      "importance": 1
+    },
+    {
+      "id": "creative",
+      "title": "Творчество и игры",
+      "short": "Творчество",
+      "description": "0 — работа по инструкции, 3 — нужно придумывать игры, праздники, проекты.",
+      "importance": 1
+    },
+    {
+      "id": "personal",
+      "title": "Работа один на один",
+      "short": "Один на один",
+      "description": "0 — в группе или толпе, 3 — всё время с одним подопечным.",
+      "importance": 1
+    }
+  ],
+  "groups": [
+    {
+      "id": "children",
+      "attribute": "children",
+      "title": "Дети и подростки",
+      "tagline": "Быть взрослым, который верит в ребёнка",
+      "description": "Педагогическое волонтёрство — это занятия, игры и наставничество для ребят из детских домов, социально-реабилитационных центров, больниц и школ. Главное здесь не подарки, а внимание и постоянство: ребёнку важно, что к нему приходят снова и снова.",
+      "image": {
+        "url": "images/dir-children.webp",
+        "alt": "Дети смотрят кукольное представление в московском сквере",
+        "position": "40% 50%",
+        "credit": {
+          "author": "Денис Гришкин",
+          "title": "Child square in Moscow 18 May 2013 01",
+          "source": "Wikimedia Commons",
+          "url": "https://commons.wikimedia.org/wiki/File:Child_square_in_Moscow_18_May_2013_01.jpg",
+          "license": "CC BY 4.0",
+          "licenseUrl": "https://creativecommons.org/licenses/by/4.0/"
+        }
+      },
+      "qualities": [
+        "Энергия и умение увлечь",
+        "Терпение",
+        "Ответственность и постоянство",
+        "Умение слушать"
+      ],
+      "firstSteps": [
+        "Найди проект наставничества или досуга для детей на Добро.рф или в волонтёрском центре своего вуза",
+        "Пройди обучение для волонтёров: фонды, которые работают с детьми, обычно проводят его перед стартом",
+        "Договорись о регулярных встречах, например раз в неделю: так ребята быстрее начнут тебе доверять"
+      ]
+    },
+    {
+      "id": "inclusion",
+      "attribute": "inclusion",
+      "title": "Люди с инвалидностью",
+      "tagline": "Делать мир доступным для всех",
+      "description": "Инклюзивное волонтёрство помогает людям с инвалидностью жить полной жизнью: передвигаться по городу, ходить на концерты и соревнования, учиться и работать. Волонтёр здесь не спасатель, а партнёр, который помогает ровно настолько, насколько нужно.",
+      "image": {
+        "url": "images/dir-inclusion.webp",
+        "alt": "Три подруги идут по улице, одна из них — на инвалидной коляске",
+        "position": "50% 30%",
+        "credit": {
+          "author": "Disabledandhere",
+          "title": "Disabled BIPOC strolling down street",
+          "source": "Wikimedia Commons",
+          "url": "https://commons.wikimedia.org/wiki/File:Disabled_BIPOC_strolling_down_street.jpg",
+          "license": "CC BY 4.0",
+          "licenseUrl": "https://creativecommons.org/licenses/by/4.0/"
+        }
+      },
+      "qualities": [
+        "Такт и уважение к самостоятельности человека",
+        "Спокойствие",
+        "Готовность учиться особым навыкам",
+        "Внимательность"
+      ],
+      "firstSteps": [
+        "Разберись в этикете общения с людьми с инвалидностью — для этого есть короткие бесплатные курсы и памятки",
+        "Запишись сопровождающим на инклюзивное мероприятие: забег, фестиваль или спектакль",
+        "Выбери навык для развития: жестовый язык, тифлокомментирование или сопровождение"
+      ]
+    },
+    {
+      "id": "seniors",
+      "attribute": "seniors",
+      "title": "Старшее поколение",
+      "tagline": "Дарить время и внимание тем, кто этого ждёт",
+      "description": "Волонтёры помогают пожилым людям оставаться активными и не чувствовать себя одинокими: навещают их дома и в домах престарелых, учат пользоваться смартфоном, помогают по хозяйству, устраивают праздники и прогулки. Иногда самое ценное — просто выслушать.",
+      "image": {
+        "url": "images/dir-seniors.webp",
+        "alt": "Пожилые пары танцуют вальс в парке под духовой оркестр",
+        "position": "35% 40%",
+        "credit": {
+          "author": "Владимир Вяткин",
+          "title": "Old people dancing waltz (2010-07-24)",
+          "source": "Wikimedia Commons",
+          "url": "https://commons.wikimedia.org/wiki/File:Old_people_dancing_waltz_(2010-07-24).jpg",
+          "license": "CC BY 4.0",
+          "licenseUrl": "https://creativecommons.org/licenses/by/4.0/"
+        }
+      },
+      "qualities": [
+        "Терпение",
+        "Умение слушать",
+        "Надёжность и пунктуальность",
+        "Эмоциональная устойчивость"
+      ],
+      "firstSteps": [
+        "Найди проект помощи пожилым на Добро.рф или в ближайшем центре социального обслуживания",
+        "Начни с одного подопечного: регулярные звонки и визиты ценнее разовых больших акций",
+        "Предложи провести занятие по смартфонам и Госуслугам для пожилых жителей своего района"
+      ]
+    },
+    {
+      "id": "ecology",
+      "attribute": "ecology",
+      "title": "Экология",
+      "tagline": "Беречь природу руками и примером",
+      "description": "Экологические волонтёры убирают берега и леса, сажают деревья, помогают заповедникам, организуют раздельный сбор и рассказывают другим, как жить экологичнее. Здесь сразу виден результат — чистый берег или новая аллея, — а просвещение надолго меняет привычки людей.",
+      "image": {
+        "url": "images/dir-ecology.webp",
+        "alt": "Жители района на субботнике сгребают листья в мешок",
+        "position": "50% 40%",
+        "credit": {
+          "author": "mos.ru / РИА Новости (Михаил Фомичев)",
+          "title": "2008 All-City Subbotnik in Birylyovo 01",
+          "source": "Wikimedia Commons",
+          "url": "https://commons.wikimedia.org/wiki/File:2008_All-City_Subbotnik_in_Birylyovo_01.jpg",
+          "license": "CC BY 4.0",
+          "licenseUrl": "https://creativecommons.org/licenses/by/4.0/"
+        }
+      },
+      "qualities": [
+        "Выносливость и любовь к работе на свежем воздухе",
+        "Инициативность",
+        "Умение объяснять и вдохновлять",
+        "Последовательность"
+      ],
+      "firstSteps": [
+        "Сходи на ближайший субботник или экоакцию в своём районе",
+        "Попробуй наладить раздельный сбор в общежитии или на кафедре",
+        "Посмотри волонтёрские программы заповедников и нацпарков — многие набирают людей на лето"
+      ]
+    }
+  ],
+  "objects": [
+    {
+      "id": "mentor",
+      "group": "children",
+      "title": "Наставник ребёнка из детского дома",
+      "description": "Встречается с одним ребёнком каждую неделю: гуляет, помогает с учёбой, поддерживает. Перед стартом — школа наставников, обязательство — минимум на год.",
+      "values": {
+        "children": 3,
+        "inclusion": 0,
+        "seniors": 0,
+        "ecology": 0,
+        "physical": 0,
+        "outdoor": 1,
+        "emotional": 3,
+        "regular": 3,
+        "training": 2,
+        "leading": 0,
+        "teaching": 2,
+        "creative": 1,
+        "personal": 3
+      }
+    },
+    {
+      "id": "tutor",
+      "group": "children",
+      "title": "Репетитор для детей из социальных учреждений",
+      "description": "Помогает с уроками и готовит к экзаменам — очно или онлайн.",
+      "values": {
+        "children": 3,
+        "inclusion": 0,
+        "seniors": 0,
+        "ecology": 0,
+        "physical": 0,
+        "outdoor": 0,
+        "emotional": 1,
+        "regular": 2,
+        "training": 2,
+        "leading": 0,
+        "teaching": 3,
+        "creative": 1,
+        "personal": 2
+      }
+    },
+    {
+      "id": "counselor",
+      "group": "children",
+      "title": "Вожатый в детском лагере",
+      "description": "Ведёт отряд на лагерной смене: игры, походы, творческие дела. Перед сменой — школа вожатых.",
+      "values": {
+        "children": 3,
+        "inclusion": 0,
+        "seniors": 0,
+        "ecology": 0,
+        "physical": 2,
+        "outdoor": 3,
+        "emotional": 1,
+        "regular": 1,
+        "training": 2,
+        "leading": 3,
+        "teaching": 1,
+        "creative": 3,
+        "personal": 0
+      }
+    },
+    {
+      "id": "hospital",
+      "group": "children",
+      "title": "Аниматор в детской больнице",
+      "description": "Устраивает игры, мастер-классы и праздники для детей, которые долго лечатся.",
+      "values": {
+        "children": 3,
+        "inclusion": 1,
+        "seniors": 0,
+        "ecology": 0,
+        "physical": 0,
+        "outdoor": 0,
+        "emotional": 3,
+        "regular": 2,
+        "training": 1,
+        "leading": 2,
+        "teaching": 0,
+        "creative": 3,
+        "personal": 1
+      }
+    },
+    {
+      "id": "career",
+      "group": "children",
+      "title": "Профориентатор для подростков",
+      "description": "Рассказывает старшеклассникам о профессиях и помогает выбрать, куда поступать.",
+      "values": {
+        "children": 2,
+        "inclusion": 0,
+        "seniors": 0,
+        "ecology": 0,
+        "physical": 0,
+        "outdoor": 0,
+        "emotional": 0,
+        "regular": 0,
+        "training": 1,
+        "leading": 2,
+        "teaching": 3,
+        "creative": 1,
+        "personal": 1
+      }
+    },
+    {
+      "id": "specialKids",
+      "group": "children",
+      "title": "Волонтёр центра для детей с особенностями развития",
+      "description": "Играет и занимается с детьми с аутизмом, синдромом Дауна, ДЦП — вместе с педагогами центра.",
+      "values": {
+        "children": 3,
+        "inclusion": 3,
+        "seniors": 0,
+        "ecology": 0,
+        "physical": 1,
+        "outdoor": 1,
+        "emotional": 2,
+        "regular": 2,
+        "training": 2,
+        "leading": 0,
+        "teaching": 2,
+        "creative": 2,
+        "personal": 2
+      }
+    },
+    {
+      "id": "escort",
+      "group": "inclusion",
+      "title": "Сопровождающий человека на коляске",
+      "description": "Помогает добраться по городу и в транспорте, побывать на концертах и мероприятиях.",
+      "values": {
+        "children": 0,
+        "inclusion": 3,
+        "seniors": 1,
+        "ecology": 0,
+        "physical": 3,
+        "outdoor": 3,
+        "emotional": 1,
+        "regular": 1,
+        "training": 1,
+        "leading": 0,
+        "teaching": 0,
+        "creative": 0,
+        "personal": 3
+      }
+    },
+    {
+      "id": "signLanguage",
+      "group": "inclusion",
+      "title": "Помощник глухих людей",
+      "description": "Общается на русском жестовом языке, помогает на мероприятиях и в учреждениях.",
+      "values": {
+        "children": 0,
+        "inclusion": 3,
+        "seniors": 0,
+        "ecology": 0,
+        "physical": 0,
+        "outdoor": 0,
+        "emotional": 1,
+        "regular": 2,
+        "training": 3,
+        "leading": 0,
+        "teaching": 1,
+        "creative": 0,
+        "personal": 2
+      }
+    },
+    {
+      "id": "audioDescription",
+      "group": "inclusion",
+      "title": "Тифлокомментатор",
+      "description": "Описывает незрячим людям то, что происходит на спектакле, экскурсии или матче.",
+      "values": {
+        "children": 0,
+        "inclusion": 3,
+        "seniors": 1,
+        "ecology": 0,
+        "physical": 0,
+        "outdoor": 1,
+        "emotional": 0,
+        "regular": 1,
+        "training": 3,
+        "leading": 0,
+        "teaching": 0,
+        "creative": 2,
+        "personal": 1
+      }
+    },
+    {
+      "id": "inclusiveSport",
+      "group": "inclusion",
+      "title": "Волонтёр инклюзивных соревнований",
+      "description": "Помогает на забегах, турнирах и фестивалях, где выступают спортсмены с инвалидностью.",
+      "values": {
+        "children": 1,
+        "inclusion": 3,
+        "seniors": 0,
+        "ecology": 0,
+        "physical": 2,
+        "outdoor": 3,
+        "emotional": 1,
+        "regular": 0,
+        "training": 1,
+        "leading": 1,
+        "teaching": 0,
+        "creative": 0,
+        "personal": 1
+      }
+    },
+    {
+      "id": "inclusiveArt",
+      "group": "inclusion",
+      "title": "Помощник инклюзивной творческой мастерской",
+      "description": "Занимается музыкой, живописью и театром с людьми с ментальными особенностями.",
+      "values": {
+        "children": 0,
+        "inclusion": 3,
+        "seniors": 0,
+        "ecology": 0,
+        "physical": 0,
+        "outdoor": 0,
+        "emotional": 2,
+        "regular": 2,
+        "training": 1,
+        "leading": 1,
+        "teaching": 1,
+        "creative": 3,
+        "personal": 1
+      }
+    },
+    {
+      "id": "accessibility",
+      "group": "inclusion",
+      "title": "Исследователь доступной среды",
+      "description": "Проверяет пандусы, входы и навигацию и отмечает их на карте доступности города.",
+      "values": {
+        "children": 0,
+        "inclusion": 2,
+        "seniors": 1,
+        "ecology": 0,
+        "physical": 2,
+        "outdoor": 3,
+        "emotional": 0,
+        "regular": 0,
+        "training": 1,
+        "leading": 1,
+        "teaching": 0,
+        "creative": 1,
+        "personal": 0
+      }
+    },
+    {
+      "id": "careHome",
+      "group": "seniors",
+      "title": "Волонтёр дома престарелых",
+      "description": "Навещает подопечных: общается, гуляет, устраивает праздники и концерты.",
+      "values": {
+        "children": 0,
+        "inclusion": 1,
+        "seniors": 3,
+        "ecology": 0,
+        "physical": 1,
+        "outdoor": 1,
+        "emotional": 3,
+        "regular": 2,
+        "training": 1,
+        "leading": 1,
+        "teaching": 0,
+        "creative": 2,
+        "personal": 2
+      }
+    },
+    {
+      "id": "digital",
+      "group": "seniors",
+      "title": "Учитель цифровой грамотности",
+      "description": "Учит пожилых людей пользоваться смартфоном, мессенджерами и Госуслугами.",
+      "values": {
+        "children": 0,
+        "inclusion": 0,
+        "seniors": 3,
+        "ecology": 0,
+        "physical": 0,
+        "outdoor": 0,
+        "emotional": 0,
+        "regular": 1,
+        "training": 1,
+        "leading": 1,
+        "teaching": 3,
+        "creative": 0,
+        "personal": 2
+      }
+    },
+    {
+      "id": "homeHelp",
+      "group": "seniors",
+      "title": "Помощник пожилых на дому",
+      "description": "Приносит продукты и лекарства, помогает по хозяйству одиноким пожилым людям.",
+      "values": {
+        "children": 0,
+        "inclusion": 1,
+        "seniors": 3,
+        "ecology": 0,
+        "physical": 2,
+        "outdoor": 1,
+        "emotional": 1,
+        "regular": 2,
+        "training": 0,
+        "leading": 0,
+        "teaching": 0,
+        "creative": 0,
+        "personal": 3
+      }
+    },
+    {
+      "id": "phoneFriend",
+      "group": "seniors",
+      "title": "Телефонный друг",
+      "description": "Регулярно звонит одиноким пожилым людям, чтобы просто поговорить.",
+      "values": {
+        "children": 0,
+        "inclusion": 0,
+        "seniors": 3,
+        "ecology": 0,
+        "physical": 0,
+        "outdoor": 0,
+        "emotional": 2,
+        "regular": 3,
+        "training": 1,
+        "leading": 0,
+        "teaching": 0,
+        "creative": 0,
+        "personal": 3
+      }
+    },
+    {
+      "id": "memories",
+      "group": "seniors",
+      "title": "Собиратель историй",
+      "description": "Записывает воспоминания пожилых людей и помогает собрать семейный архив.",
+      "values": {
+        "children": 0,
+        "inclusion": 0,
+        "seniors": 3,
+        "ecology": 0,
+        "physical": 0,
+        "outdoor": 0,
+        "emotional": 1,
+        "regular": 1,
+        "training": 1,
+        "leading": 0,
+        "teaching": 0,
+        "creative": 3,
+        "personal": 3
+      }
+    },
+    {
+      "id": "hospice",
+      "group": "seniors",
+      "title": "Волонтёр хосписа",
+      "description": "Бывает рядом с тяжелобольными людьми: общается, помогает с уходом и досугом.",
+      "values": {
+        "children": 0,
+        "inclusion": 1,
+        "seniors": 2,
+        "ecology": 0,
+        "physical": 1,
+        "outdoor": 0,
+        "emotional": 3,
+        "regular": 2,
+        "training": 2,
+        "leading": 0,
+        "teaching": 0,
+        "creative": 1,
+        "personal": 3
+      }
+    },
+    {
+      "id": "cleanup",
+      "group": "ecology",
+      "title": "Участник субботников и уборок",
+      "description": "Убирает мусор в парках, лесах и на берегах рек.",
+      "values": {
+        "children": 0,
+        "inclusion": 0,
+        "seniors": 0,
+        "ecology": 3,
+        "physical": 3,
+        "outdoor": 3,
+        "emotional": 0,
+        "regular": 0,
+        "training": 0,
+        "leading": 0,
+        "teaching": 0,
+        "creative": 0,
+        "personal": 0
+      }
+    },
+    {
+      "id": "greening",
+      "group": "ecology",
+      "title": "Озеленитель",
+      "description": "Сажает деревья и разбивает клумбы во дворах вместе с жителями.",
+      "values": {
+        "children": 0,
+        "inclusion": 0,
+        "seniors": 1,
+        "ecology": 3,
+        "physical": 3,
+        "outdoor": 3,
+        "emotional": 0,
+        "regular": 1,
+        "training": 0,
+        "leading": 1,
+        "teaching": 0,
+        "creative": 1,
+        "personal": 0
+      }
+    },
+    {
+      "id": "reserve",
+      "group": "ecology",
+      "title": "Волонтёр заповедника",
+      "description": "Помогает сотрудникам заповедника или нацпарка: учёт птиц, обустройство экотроп.",
+      "values": {
+        "children": 0,
+        "inclusion": 0,
+        "seniors": 0,
+        "ecology": 3,
+        "physical": 3,
+        "outdoor": 3,
+        "emotional": 0,
+        "regular": 1,
+        "training": 2,
+        "leading": 0,
+        "teaching": 0,
+        "creative": 0,
+        "personal": 0
+      }
+    },
+    {
+      "id": "recycling",
+      "group": "ecology",
+      "title": "Организатор раздельного сбора",
+      "description": "Проводит акции по сбору вторсырья и объясняет жителям, как сортировать отходы.",
+      "values": {
+        "children": 0,
+        "inclusion": 0,
+        "seniors": 0,
+        "ecology": 3,
+        "physical": 1,
+        "outdoor": 2,
+        "emotional": 0,
+        "regular": 2,
+        "training": 1,
+        "leading": 3,
+        "teaching": 2,
+        "creative": 1,
+        "personal": 0
+      }
+    },
+    {
+      "id": "ecoTeacher",
+      "group": "ecology",
+      "title": "Экопросветитель",
+      "description": "Проводит экоуроки и квесты о природе для школьников.",
+      "values": {
+        "children": 2,
+        "inclusion": 0,
+        "seniors": 0,
+        "ecology": 3,
+        "physical": 0,
+        "outdoor": 1,
+        "emotional": 0,
+        "regular": 1,
+        "training": 1,
+        "leading": 2,
+        "teaching": 3,
+        "creative": 3,
+        "personal": 0
+      }
+    },
+    {
+      "id": "ecoProject",
+      "group": "ecology",
+      "title": "Автор экопроекта",
+      "description": "Придумывает и запускает свою экоинициативу — от скворечников во дворе до кампании в соцсетях.",
+      "values": {
+        "children": 0,
+        "inclusion": 0,
+        "seniors": 0,
+        "ecology": 3,
+        "physical": 1,
+        "outdoor": 1,
+        "emotional": 0,
+        "regular": 2,
+        "training": 1,
+        "leading": 3,
+        "teaching": 1,
+        "creative": 3,
+        "personal": 0
+      }
+    }
+  ],
+  "blocks": [
+    {
+      "id": "general",
+      "title": "Мотивы и стиль",
+      "description": "Что тебя вдохновляет и как тебе удобнее помогать",
+      "questions": [
+        {
+          "id": "general-free-day",
+          "parameter": "Занятие в свободный день",
+          "text": "Выдался свободный день, и ты хочешь провести его с пользой. Что выберешь?",
+          "type": "single",
+          "image": {
+            "url": "images/general-free-day.webp",
+            "alt": "Волонтёр с табличкой встречает гостей праздника в парке Сокольники",
+            "position": "50% 30%",
+            "credit": {
+              "author": "goulp_ru",
+              "title": "Волонтеры 2016 Большое приключение в сокольниках (239)",
+              "source": "Flickr",
+              "url": "https://www.flickr.com/photos/129853996@N05/26963332082",
+              "license": "CC0",
+              "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/"
+            }
+          },
+          "note": "Прямой выбор между сферами: 3 балла сфере варианта. Сами занятия говорят и о стиле: квест — это игры и ведение группы, сопровождение и день с пожилыми — работа один на один, природа — работа на улице и физическая нагрузка.",
+          "options": [
+            {
+              "id": "a",
+              "text": "Провести квест для ребят из социально-реабилитационного центра",
+              "image": {
+                "url": "images/dir-children.webp",
+                "alt": "Дети смотрят кукольное представление в московском сквере",
+                "position": "40% 50%",
+                "credit": {
+                  "author": "Денис Гришкин",
+                  "title": "Child square in Moscow 18 May 2013 01",
+                  "source": "Wikimedia Commons",
+                  "url": "https://commons.wikimedia.org/wiki/File:Child_square_in_Moscow_18_May_2013_01.jpg",
+                  "license": "CC BY 4.0",
+                  "licenseUrl": "https://creativecommons.org/licenses/by/4.0/"
+                }
+              },
+              "weights": {
+                "children": 3,
+                "leading": 1,
+                "creative": 1
+              },
+              "reasons": {
+                "children": "Свободный день ты хочешь посвятить квесту для ребят из социального центра."
+              }
+            },
+            {
+              "id": "b",
+              "text": "Стать сопровождающим на инклюзивном фестивале",
+              "image": {
+                "url": "images/dir-inclusion.webp",
+                "alt": "Три подруги идут по улице, одна из них — на инвалидной коляске",
+                "position": "50% 30%",
+                "credit": {
+                  "author": "Disabledandhere",
+                  "title": "Disabled BIPOC strolling down street",
+                  "source": "Wikimedia Commons",
+                  "url": "https://commons.wikimedia.org/wiki/File:Disabled_BIPOC_strolling_down_street.jpg",
+                  "license": "CC BY 4.0",
+                  "licenseUrl": "https://creativecommons.org/licenses/by/4.0/"
+                }
+              },
+              "weights": {
+                "inclusion": 3,
+                "personal": 1
+              },
+              "reasons": {
+                "inclusion": "Свободный день ты хочешь посвятить инклюзивному фестивалю — в роли сопровождающего."
+              }
+            },
+            {
+              "id": "c",
+              "text": "Провести день с пожилыми людьми: чай, разговоры, помощь со смартфоном",
+              "image": {
+                "url": "images/dir-seniors.webp",
+                "alt": "Пожилые пары танцуют вальс в парке под духовой оркестр",
+                "position": "35% 40%",
+                "credit": {
+                  "author": "Владимир Вяткин",
+                  "title": "Old people dancing waltz (2010-07-24)",
+                  "source": "Wikimedia Commons",
+                  "url": "https://commons.wikimedia.org/wiki/File:Old_people_dancing_waltz_(2010-07-24).jpg",
+                  "license": "CC BY 4.0",
+                  "licenseUrl": "https://creativecommons.org/licenses/by/4.0/"
+                }
+              },
+              "weights": {
+                "seniors": 3,
+                "personal": 1
+              },
+              "reasons": {
+                "seniors": "Свободный день ты хочешь провести с пожилыми людьми — за чаем и разговорами."
+              }
+            },
+            {
+              "id": "d",
+              "text": "Выбраться на природу: убрать берег реки или посадить деревья",
+              "image": {
+                "url": "images/dir-ecology.webp",
+                "alt": "Жители района на субботнике сгребают листья в мешок",
+                "position": "50% 40%",
+                "credit": {
+                  "author": "mos.ru / РИА Новости (Михаил Фомичев)",
+                  "title": "2008 All-City Subbotnik in Birylyovo 01",
+                  "source": "Wikimedia Commons",
+                  "url": "https://commons.wikimedia.org/wiki/File:2008_All-City_Subbotnik_in_Birylyovo_01.jpg",
+                  "license": "CC BY 4.0",
+                  "licenseUrl": "https://creativecommons.org/licenses/by/4.0/"
+                }
+              },
+              "weights": {
+                "ecology": 3,
+                "physical": 1,
+                "outdoor": 1
+              },
+              "reasons": {
+                "ecology": "Свободный день ты хочешь провести на природе: убрать берег или посадить деревья."
+              }
+            }
+          ]
+        },
+        {
+          "id": "general-concerns",
+          "parameter": "Проблемы, которые волнуют",
+          "text": "Какие проблемы задевают тебя сильнее всего?",
+          "type": "multiple",
+          "image": {
+            "url": "images/general-concerns.webp",
+            "alt": "Пожилая женщина сидит у дороги и продаёт овощи",
+            "position": "40% 60%",
+            "credit": {
+              "author": "spoilt.exile",
+              "title": "Бабушка / Granny",
+              "source": "Flickr",
+              "url": "https://www.flickr.com/photos/96301483@N05/50188786102",
+              "license": "CC BY-SA 2.0",
+              "licenseUrl": "https://creativecommons.org/licenses/by-sa/2.0/"
+            }
+          },
+          "note": "Ценностный вопрос: что задевает человека, то его и мотивирует. По 2 балла направлению каждого отмеченного варианта; если отметить всё, баллы уравновесятся.",
+          "options": [
+            {
+              "id": "a",
+              "text": "Дети из детских домов растут без взрослого, который в них верит",
+              "weights": {
+                "children": 2
+              },
+              "reasons": {
+                "children": "Тебя задевает, что дети из детских домов растут без поддержки взрослых."
+              }
+            },
+            {
+              "id": "b",
+              "text": "Людям на коляске или с нарушением зрения трудно выйти из дома и жить полноценно",
+              "weights": {
+                "inclusion": 2
+              },
+              "reasons": {
+                "inclusion": "Тебя волнует, что людям с инвалидностью трудно даже просто выйти из дома."
+              }
+            },
+            {
+              "id": "c",
+              "text": "Пожилые люди неделями ни с кем не разговаривают",
+              "weights": {
+                "seniors": 2
+              },
+              "reasons": {
+                "seniors": "Тебя трогает одиночество пожилых людей."
+              }
+            },
+            {
+              "id": "d",
+              "text": "Мусор в лесах, грязные реки и вырубка деревьев",
+              "weights": {
+                "ecology": 2
+              },
+              "reasons": {
+                "ecology": "Тебя беспокоит, что мусор и вырубка разрушают природу."
+              }
+            }
+          ]
+        },
+        {
+          "id": "general-setting",
+          "parameter": "Комфортная обстановка",
+          "text": "В какой обстановке тебе комфортнее всего помогать?",
+          "type": "single",
+          "image": {
+            "url": "images/general-setting.webp",
+            "alt": "Волонтёры в красных футболках выступают на сцене городского праздника",
+            "position": "50% 35%",
+            "credit": {
+              "author": "goulp_ru",
+              "title": "Волонтеры 2016 Большое приключение в сокольниках (256)",
+              "source": "Flickr",
+              "url": "https://www.flickr.com/photos/129853996@N05/27024639276",
+              "license": "CC0",
+              "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/"
+            }
+          },
+          "note": "Предпочтительная обстановка. Спокойная беседа и помощь конкретному человеку — общие черты работы с пожилыми и с людьми с инвалидностью, поэтому b и c дают по 1 баллу соседней сфере. Шумная компания говорит о любви к играм и движению и против работы один на один, свежий воздух — о работе на улице и физической нагрузке.",
+          "options": [
+            {
+              "id": "a",
+              "text": "В шумной компании, где много игр, движения и эмоций",
+              "weights": {
+                "children": 3,
+                "physical": 1,
+                "creative": 2,
+                "personal": -1
+              },
+              "reasons": {
+                "children": "Тебе комфортно в шумной компании, где много игр и эмоций, — как на занятиях с детьми."
+              }
+            },
+            {
+              "id": "b",
+              "text": "В спокойной беседе, где важно выслушать и поддержать",
+              "weights": {
+                "inclusion": 1,
+                "seniors": 3,
+                "physical": -1,
+                "personal": 2
+              },
+              "reasons": {
+                "seniors": "Тебе ближе спокойная беседа, где важно выслушать, — на этом строится общение с пожилыми людьми.",
+                "inclusion": "Ты умеешь выслушать и поддержать."
+              }
+            },
+            {
+              "id": "c",
+              "text": "Рядом с человеком, которому нужна конкретная помощь: сопроводить, подсказать, подстроиться под его темп",
+              "weights": {
+                "inclusion": 3,
+                "seniors": 1,
+                "personal": 3
+              },
+              "reasons": {
+                "inclusion": "Тебе комфортно помогать конкретному человеку и подстраиваться под его темп.",
+                "seniors": "Ты готов(а) подстраиваться под темп другого человека."
+              }
+            },
+            {
+              "id": "d",
+              "text": "На свежем воздухе, где можно поработать руками и сразу увидеть результат",
+              "weights": {
+                "ecology": 3,
+                "physical": 2,
+                "outdoor": 3,
+                "personal": -1
+              },
+              "reasons": {
+                "ecology": "Тебе нравится работать руками на свежем воздухе и сразу видеть результат."
+              }
+            }
+          ]
+        },
+        {
+          "id": "general-teamwork",
+          "parameter": "Роль в команде",
+          "text": "Кем ты чаще всего оказываешься в командной работе?",
+          "type": "single",
+          "image": {
+            "url": "images/general-teamwork.webp",
+            "alt": "Волонтёры вместе несут бревно на субботнике в парке",
+            "position": "50% 50%",
+            "credit": {
+              "author": "Илья Питалёв",
+              "title": "Media-subbotnik 2011 02",
+              "source": "Wikimedia Commons",
+              "url": "https://commons.wikimedia.org/wiki/File:Media-subbotnik_2011_02.jpg",
+              "license": "CC BY 4.0",
+              "licenseUrl": "https://creativecommons.org/licenses/by/4.0/"
+            }
+          },
+          "note": "Роль в команде. Ведущий и генератор идей нужны и в работе с детьми, и в экопроектах; ведущий — прямой признак лидерства, генератор идей — творчества. Надёжность важна при регулярных визитах к пожилым и говорит о готовности к регулярности, внимание к нуждам другого — о работе один на один.",
+          "options": [
+            {
+              "id": "a",
+              "text": "Тем, кто ведёт за собой и заряжает остальных",
+              "weights": {
+                "children": 2,
+                "ecology": 1,
+                "leading": 3
+              },
+              "reasons": {
+                "children": "В команде ты ведёшь за собой и заряжаешь других — так работают вожатые и наставники.",
+                "ecology": "Ты умеешь вести за собой — это пригодится на экоакциях."
+              }
+            },
+            {
+              "id": "b",
+              "text": "Генератором идей, который придумывает, что и как сделать",
+              "weights": {
+                "children": 1,
+                "ecology": 2,
+                "leading": 1,
+                "creative": 3
+              },
+              "reasons": {
+                "ecology": "Ты генератор идей, а на таких людях держатся экопроекты.",
+                "children": "Ты умеешь придумывать, а детям нужны интересные занятия."
+              }
+            },
+            {
+              "id": "c",
+              "text": "Надёжным исполнителем, на которого можно положиться",
+              "weights": {
+                "seniors": 2,
+                "regular": 2,
+                "leading": -1
+              },
+              "reasons": {
+                "seniors": "На тебя можно положиться, а для пожилых людей постоянство особенно важно."
+              }
+            },
+            {
+              "id": "d",
+              "text": "Тем, кто замечает, кому нужна помощь, и оказывается рядом",
+              "weights": {
+                "inclusion": 2,
+                "personal": 2
+              },
+              "reasons": {
+                "inclusion": "Ты замечаешь, кому нужна помощь, — это главное качество в инклюзивном волонтёрстве."
+              }
+            }
+          ]
+        },
+        {
+          "id": "general-time",
+          "parameter": "Время на волонтёрство",
+          "text": "Сколько времени ты готов(а) уделять волонтёрству?",
+          "type": "single",
+          "image": {
+            "url": "images/general-time.webp",
+            "alt": "Две волонтёрки с табличками ждут гостей у входа в парк Сокольники",
+            "position": "50% 45%",
+            "credit": {
+              "author": "goulp_ru",
+              "title": "Волонтеры 2016 Большое приключение в сокольниках (253)",
+              "source": "Flickr",
+              "url": "https://www.flickr.com/photos/129853996@N05/26963326752",
+              "license": "CC0",
+              "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/"
+            }
+          },
+          "note": "Регулярность: наставничество, «телефонный друг» и хоспис требуют постоянства, субботники и соревнования — нет. На сферы вопрос не влияет. Ответ «только иногда» делает очевидным ответ на вопрос о постоянстве с детьми (правило П2).",
+          "options": [
+            {
+              "id": "a",
+              "text": "Несколько часов каждую неделю — и так месяцами",
+              "weights": {
+                "regular": 3
+              }
+            },
+            {
+              "id": "b",
+              "text": "Пару раз в месяц, когда получается",
+              "weights": {
+                "regular": 1
+              }
+            },
+            {
+              "id": "c",
+              "text": "Только иногда — на разовых акциях и событиях",
+              "weights": {
+                "regular": -2
+              }
+            },
+            {
+              "id": "d",
+              "text": "Пока не знаю",
+              "weights": {}
+            }
+          ]
+        },
+        {
+          "id": "general-training",
+          "parameter": "Готовность к обучению",
+          "text": "Для некоторых видов помощи нужна подготовка: школа наставников, курс жестового языка, обучение в хосписе. Как ты к этому относишься?",
+          "type": "single",
+          "image": {
+            "url": "images/general-training.webp",
+            "alt": "Вожатые отряда «Пламенный» на линейке",
+            "position": "50% 35%",
+            "credit": {
+              "author": "Shelkovoy",
+              "title": "Вожатые отряда \"Пламенный\" (Пенза). Линейка",
+              "source": "Wikimedia Commons",
+              "url": "https://commons.wikimedia.org/wiki/File:%D0%92%D0%BE%D0%B6%D0%B0%D1%82%D1%8B%D0%B5_%D0%BE%D1%82%D1%80%D1%8F%D0%B4%D0%B0_%22%D0%9F%D0%BB%D0%B0%D0%BC%D0%B5%D0%BD%D0%BD%D1%8B%D0%B9%22_(%D0%9F%D0%B5%D0%BD%D0%B7%D0%B0)._%D0%9B%D0%B8%D0%BD%D0%B5%D0%B9%D0%BA%D0%B0.jpg",
+              "license": "CC BY-SA 4.0",
+              "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/"
+            }
+          },
+          "note": "Готовность учиться: тифлокомментатору и помощнику глухих без обучения не обойтись, на субботник можно прийти сразу. На сферы вопрос не влияет.",
+          "options": [
+            {
+              "id": "a",
+              "text": "С удовольствием поучусь — это интересно",
+              "weights": {
+                "training": 3
+              }
+            },
+            {
+              "id": "b",
+              "text": "Готов(а), если обучение короткое",
+              "weights": {
+                "training": 1
+              }
+            },
+            {
+              "id": "c",
+              "text": "Хочу помогать сразу, без подготовки",
+              "weights": {
+                "training": -2
+              }
+            }
+          ]
+        },
+        {
+          "id": "general-physical",
+          "parameter": "Отношение к физической нагрузке",
+          "text": "Как ты относишься к физической нагрузке — носить тяжёлое, копать, много ходить?",
+          "type": "single",
+          "image": {
+            "url": "images/general-physical.webp",
+            "alt": "Волонтёры носят ветки на субботнике в лесопарке",
+            "position": "50% 45%",
+            "credit": {
+              "author": "Илья Питалёв",
+              "title": "Media-subbotnik 2011 01",
+              "source": "Wikimedia Commons",
+              "url": "https://commons.wikimedia.org/wiki/File:Media-subbotnik_2011_01.jpg",
+              "license": "CC BY 4.0",
+              "licenseUrl": "https://creativecommons.org/licenses/by/4.0/"
+            }
+          },
+          "note": "Физическая нагрузка: субботники, озеленение и сопровождение на коляске требуют сил, «телефонный друг» и тифлокомментатор — нет. На сферы вопрос не влияет. Противопоказание делает очевидным ответ на вопрос о грязной работе (правило П4).",
+          "options": [
+            {
+              "id": "a",
+              "text": "Нормально, люблю подвигаться",
+              "weights": {
+                "physical": 3,
+                "outdoor": 1
+              }
+            },
+            {
+              "id": "b",
+              "text": "В меру, если без тяжестей",
+              "weights": {
+                "physical": 1
+              }
+            },
+            {
+              "id": "c",
+              "text": "Предпочитаю спокойную работу",
+              "weights": {
+                "physical": -1
+              }
+            },
+            {
+              "id": "d",
+              "text": "Мне противопоказана физическая нагрузка",
+              "weights": {
+                "physical": -2
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "children",
+      "group": "children",
+      "title": "Дети и подростки",
+      "description": "Педагогическое волонтёрство: учёба, досуг и наставничество",
+      "questions": [
+        {
+          "id": "children-experience",
+          "parameter": "Опыт общения с детьми",
+          "text": "Есть ли у тебя опыт общения с детьми и подростками — вожатство, репетиторство, кружки, младшие братья и сёстры?",
+          "type": "single",
+          "image": {
+            "url": "images/children-experience.webp",
+            "alt": "Две вожатые в форме и галстуках на слёте вожатых",
+            "position": "65% 40%",
+            "credit": {
+              "author": "Nvlarina",
+              "title": "Слет вожатых 2018",
+              "source": "Wikimedia Commons",
+              "url": "https://commons.wikimedia.org/wiki/File:%D0%A1%D0%BB%D0%B5%D1%82_%D0%B2%D0%BE%D0%B6%D0%B0%D1%82%D1%8B%D1%85_2018.jpg",
+              "license": "CC BY-SA 4.0",
+              "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/"
+            }
+          },
+          "note": "Опыт общения с детьми: шкала 3–2–1–0 от регулярных занятий до дискомфорта.",
+          "options": [
+            {
+              "id": "a",
+              "text": "Да, я регулярно занимаюсь с детьми",
+              "weights": {
+                "children": 3
+              },
+              "reasons": {
+                "children": "У тебя уже есть регулярный опыт занятий с детьми."
+              }
+            },
+            {
+              "id": "b",
+              "text": "Бывает время от времени — в семье или с детьми знакомых",
+              "weights": {
+                "children": 2
+              },
+              "reasons": {
+                "children": "Ты время от времени общаешься с детьми — это хорошая база."
+              }
+            },
+            {
+              "id": "c",
+              "text": "Почти нет, но мне было бы интересно попробовать",
+              "weights": {
+                "children": 1
+              },
+              "reasons": {
+                "children": "Тебе интересно попробовать себя в работе с детьми."
+              }
+            },
+            {
+              "id": "d",
+              "text": "Нет, с детьми мне обычно неуютно",
+              "weights": {}
+            }
+          ]
+        },
+        {
+          "id": "children-activities",
+          "parameter": "Интересные занятия с детьми",
+          "text": "Чем тебе было бы интересно заниматься с ребятами?",
+          "type": "multiple",
+          "image": {
+            "url": "images/children-activities.webp",
+            "alt": "Дети играют в большие шахматы на бульваре",
+            "position": "50% 50%",
+            "credit": {
+              "author": "Александр Уткин/РИА Новости",
+              "title": "Childrens gamed on chess on Strastnoy Boulevard",
+              "source": "Wikimedia Commons",
+              "url": "https://commons.wikimedia.org/wiki/File:Childrens_gamed_on_chess_on_Strastnoy_Boulevard.jpg",
+              "license": "CC BY 4.0",
+              "licenseUrl": "https://creativecommons.org/licenses/by/4.0/"
+            }
+          },
+          "note": "По 1 баллу за каждое занятие. Работа с детьми с особенностями развития — на стыке с инклюзией (+1 инклюзии). Помощь с учёбой и профориентация — это обучение, игры и мастер-классы — творчество. «Ничего из этого» снимает остальные отметки.",
+          "reasonTemplate": {
+            "children": "Из занятий с ребятами тебя привлекают: {options}."
+          },
+          "options": [
+            {
+              "id": "a",
+              "text": "Помогать с учёбой и готовить к экзаменам",
+              "short": "помощь с учёбой",
+              "weights": {
+                "children": 1,
+                "teaching": 1
+              }
+            },
+            {
+              "id": "b",
+              "text": "Проводить игры, квесты и творческие мастер-классы",
+              "short": "игры и мастер-классы",
+              "weights": {
+                "children": 1,
+                "creative": 1
+              }
+            },
+            {
+              "id": "c",
+              "text": "Рассказывать о профессиях и помогать выбрать, куда поступать",
+              "short": "рассказы о профессиях",
+              "weights": {
+                "children": 1,
+                "teaching": 1
+              }
+            },
+            {
+              "id": "d",
+              "text": "Заниматься с детьми с особенностями развития",
+              "short": "занятия с детьми с особенностями развития",
+              "weights": {
+                "children": 1,
+                "inclusion": 1
+              },
+              "reasons": {
+                "inclusion": "Тебе интересно заниматься с детьми с особенностями развития."
+              }
+            },
+            {
+              "id": "e",
+              "text": "Ничего из этого меня не привлекает",
+              "exclusive": true,
+              "weights": {}
+            }
+          ]
+        },
+        {
+          "id": "children-situation",
+          "parameter": "Реакция на дерзкого подростка",
+          "text": "На занятии подросток демонстративно сидит в телефоне и грубит в ответ на замечания. Как поступишь?",
+          "type": "single",
+          "situational": true,
+          "image": {
+            "url": "images/children-situation.webp",
+            "alt": "Парень в шапке сидит на полу и смотрит в телефон",
+            "position": "50% 45%",
+            "credit": {
+              "author": "garryknight",
+              "title": "Texting on a Friday",
+              "source": "Flickr",
+              "url": "https://www.flickr.com/photos/8176740@N05/16666635654",
+              "license": "CC BY 2.0",
+              "licenseUrl": "https://creativecommons.org/licenses/by/2.0/"
+            }
+          },
+          "note": "Педагогическое чутьё: разговор наедине — лучшая стратегия (3) и признак работы один на один, вовлечение через роль — хорошая (2) и признак творческого подхода, публичное замечание и игнорирование — ошибки (0).",
+          "options": [
+            {
+              "id": "a",
+              "text": "Сделаю строгое замечание при всех, чтобы другим было неповадно",
+              "weights": {}
+            },
+            {
+              "id": "b",
+              "text": "Не стану спорить при всех, а после занятия спокойно поговорю с ним наедине",
+              "weights": {
+                "children": 3,
+                "personal": 1
+              },
+              "reasons": {
+                "children": "С дерзким подростком ты не споришь при всех, а говоришь наедине — так сохраняется доверие."
+              }
+            },
+            {
+              "id": "c",
+              "text": "Не буду обращать внимания — это его выбор",
+              "weights": {}
+            },
+            {
+              "id": "d",
+              "text": "Предложу ему роль в игре, где он сможет себя проявить",
+              "weights": {
+                "children": 2,
+                "creative": 1
+              },
+              "reasons": {
+                "children": "Ты вовлекаешь подростка через роль в игре и даёшь ему проявить себя."
+              }
+            }
+          ]
+        },
+        {
+          "id": "children-commitment",
+          "parameter": "Готовность к постоянству с детьми",
+          "text": "Дети из социальных учреждений быстро привязываются к волонтёрам и тяжело переживают, когда те пропадают. Готов(а) ли ты к такой ответственности?",
+          "type": "single",
+          "image": {
+            "url": "images/children-commitment.webp",
+            "alt": "Тренер играет в футбол с малышами",
+            "position": "50% 50%",
+            "credit": {
+              "author": "Staff Sgt. Jes Smith",
+              "title": "Meet Your Mentor Part 2, The Devoted Mother 121030-A-QY605-199",
+              "source": "Wikimedia Commons",
+              "url": "https://commons.wikimedia.org/wiki/File:Meet_Your_Mentor_Part_2,_The_Devoted_Mother_121030-A-QY605-199.jpg",
+              "license": "Общественное достояние"
+            }
+          },
+          "note": "Готовность к постоянству: разовые визиты травмируют детей из учреждений, поэтому регулярность — главный признак (3–2–1–0). Готовность ходить к детям полгода говорит и о готовности к регулярности и к эмоциональной нагрузке вообще.",
+          "options": [
+            {
+              "id": "a",
+              "text": "Да: если начну, буду приходить регулярно хотя бы полгода",
+              "weights": {
+                "children": 3,
+                "emotional": 1,
+                "regular": 1
+              },
+              "reasons": {
+                "children": "Ты готов(а) приходить к ребятам регулярно, а для детей из учреждений это важнее любых подарков."
+              }
+            },
+            {
+              "id": "b",
+              "text": "Скорее да, если рядом будет куратор, который подскажет",
+              "weights": {
+                "children": 2
+              },
+              "reasons": {
+                "children": "Ты готов(а) взять ответственность за ребят, если рядом будет куратор."
+              }
+            },
+            {
+              "id": "c",
+              "text": "Пока не уверен(а), что смогу быть рядом так долго",
+              "weights": {
+                "children": 1
+              }
+            },
+            {
+              "id": "d",
+              "text": "Мне ближе разовые акции без долгих обязательств",
+              "weights": {
+                "regular": -1
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "inclusion",
+      "group": "inclusion",
+      "title": "Люди с инвалидностью",
+      "description": "Инклюзивные практики: сопровождение и доступная среда",
+      "questions": [
+        {
+          "id": "inclusion-experience",
+          "parameter": "Опыт общения с людьми с инвалидностью",
+          "text": "Доводилось ли тебе общаться с людьми с инвалидностью?",
+          "type": "single",
+          "image": {
+            "url": "images/inclusion-experience.webp",
+            "alt": "Мужчина на инвалидной коляске и велосипедисты на улице Москвы",
+            "position": "58% 60%",
+            "credit": {
+              "author": "Retired electrician",
+              "title": "Moscow 2025-08-10 bicycle race, sidewalk 09",
+              "source": "Wikimedia Commons",
+              "url": "https://commons.wikimedia.org/wiki/File:Moscow_2025-08-10_bicycle_race,_sidewalk_09.jpg",
+              "license": "CC0",
+              "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/"
+            }
+          },
+          "note": "Опыт общения с людьми с инвалидностью: 3–2–1–0. Желание «научиться правильно помогать» — признак готовности к обучению.",
+          "options": [
+            {
+              "id": "a",
+              "text": "Да, это часть моей жизни — в семье или среди близких друзей",
+              "weights": {
+                "inclusion": 3
+              },
+              "reasons": {
+                "inclusion": "Общение с людьми с инвалидностью — привычная часть твоей жизни."
+              }
+            },
+            {
+              "id": "b",
+              "text": "Да, на учёбе, работе или мероприятиях",
+              "weights": {
+                "inclusion": 2
+              },
+              "reasons": {
+                "inclusion": "Ты уже общаешься с людьми с инвалидностью — на учёбе, работе или мероприятиях."
+              }
+            },
+            {
+              "id": "c",
+              "text": "Почти нет, но хочу научиться правильно помогать",
+              "weights": {
+                "inclusion": 1,
+                "training": 1
+              },
+              "reasons": {
+                "inclusion": "Ты хочешь научиться правильно помогать людям с инвалидностью."
+              }
+            },
+            {
+              "id": "d",
+              "text": "Нет, и я боюсь сделать что-то не так",
+              "weights": {}
+            }
+          ]
+        },
+        {
+          "id": "inclusion-skills",
+          "parameter": "Навыки, которые готов освоить",
+          "text": "Чему из этого ты готов(а) научиться?",
+          "type": "multiple",
+          "image": {
+            "url": "images/inclusion-skills.webp",
+            "alt": "Люди разговаривают на жестовом языке",
+            "position": "50% 35%",
+            "credit": {
+              "author": "David Fulmer from Pittsburgh",
+              "title": "ASL family",
+              "source": "Wikimedia Commons",
+              "url": "https://commons.wikimedia.org/wiki/File:ASL_family.jpg",
+              "license": "CC BY 2.0",
+              "licenseUrl": "https://creativecommons.org/licenses/by/2.0/"
+            }
+          },
+          "note": "Готовность осваивать особые навыки, по 1 баллу. Общение с людьми, которые с возрастом стали хуже слышать или видеть, — на стыке со старшим поколением (+1). Сопровождение на коляске требует сил и работы один на один, жестовый язык и тифлокомментирование — подготовки, тифлокомментирование — ещё и творческого подхода.",
+          "reasonTemplate": {
+            "inclusion": "Навыки, которые ты готов(а) освоить: {options}."
+          },
+          "options": [
+            {
+              "id": "a",
+              "text": "Помогать человеку на коляске передвигаться по городу и в транспорте",
+              "short": "сопровождение людей на колясках",
+              "weights": {
+                "inclusion": 1,
+                "physical": 1,
+                "personal": 1
+              }
+            },
+            {
+              "id": "b",
+              "text": "Основам русского жестового языка",
+              "short": "жестовый язык",
+              "weights": {
+                "inclusion": 1,
+                "training": 1
+              }
+            },
+            {
+              "id": "c",
+              "text": "Тифлокомментированию — описывать происходящее для незрячих на спектаклях и экскурсиях",
+              "short": "тифлокомментирование",
+              "weights": {
+                "inclusion": 1,
+                "training": 1,
+                "creative": 1
+              }
+            },
+            {
+              "id": "d",
+              "text": "Общаться с людьми, которые с возрастом стали хуже слышать или видеть",
+              "short": "общение с теми, кто с возрастом стал хуже слышать или видеть",
+              "weights": {
+                "inclusion": 1,
+                "seniors": 1
+              },
+              "reasons": {
+                "seniors": "Ты готов(а) общаться с людьми, которые с возрастом стали хуже слышать или видеть."
+              }
+            },
+            {
+              "id": "e",
+              "text": "Ничему из этого — мне это не близко",
+              "exclusive": true,
+              "weights": {}
+            }
+          ]
+        },
+        {
+          "id": "inclusion-situation",
+          "parameter": "Сопровождение незрячего",
+          "text": "Ты сопровождаешь незрячего человека на экскурсии, и вам нужно перейти дорогу. Что сделаешь?",
+          "type": "single",
+          "situational": true,
+          "image": {
+            "url": "images/inclusion-situation.webp",
+            "alt": "Незрячий человек с белой тростью переходит улицу по пешеходному переходу",
+            "position": "50% 50%",
+            "credit": {
+              "author": "kenwalton",
+              "title": "Untitled",
+              "source": "Flickr",
+              "url": "https://www.flickr.com/photos/55684318@N00/45012805182",
+              "license": "CC BY 2.0",
+              "licenseUrl": "https://creativecommons.org/licenses/by/2.0/"
+            }
+          },
+          "note": "Этикет сопровождения незрячего: спросить и предложить локоть (3), спросить и подсказывать словами (2); взять за руку или говорить громче — ошибки (0).",
+          "options": [
+            {
+              "id": "a",
+              "text": "Возьму его за руку и уверенно поведу через дорогу",
+              "weights": {}
+            },
+            {
+              "id": "b",
+              "text": "Буду говорить громче и медленнее, чтобы он точно всё понял",
+              "weights": {}
+            },
+            {
+              "id": "c",
+              "text": "Спрошу, нужна ли помощь, и предложу взять меня под локоть — пойду на полшага впереди",
+              "weights": {
+                "inclusion": 3
+              },
+              "reasons": {
+                "inclusion": "Ты знаешь, как сопровождать незрячего: спросить, нужна ли помощь, и предложить локоть."
+              }
+            },
+            {
+              "id": "d",
+              "text": "Спрошу, нужна ли помощь, и пойду рядом, предупреждая словами о бордюрах и ступеньках",
+              "weights": {
+                "inclusion": 2
+              },
+              "reasons": {
+                "inclusion": "Ты сначала спрашиваешь, нужна ли помощь, и подсказываешь дорогу словами."
+              }
+            }
+          ]
+        },
+        {
+          "id": "inclusion-readiness",
+          "parameter": "Реакция на непривычное поведение",
+          "text": "На инклюзивном мероприятии участник с ментальными особенностями ведёт себя непривычно: громко смеётся, повторяет одни и те же фразы. Как ты себя почувствуешь?",
+          "type": "single",
+          "image": {
+            "url": "images/inclusion-readiness.webp",
+            "alt": "Участники инклюзивного забега, среди них спортсмены на колясках",
+            "position": "50% 50%",
+            "credit": {
+              "author": "Chloetiffanylee",
+              "title": "Special Olympics Sabah in Borneo International Marathon",
+              "source": "Wikimedia Commons",
+              "url": "https://commons.wikimedia.org/wiki/File:Special_Olympics_Sabah_in_Borneo_International_Marathon.jpg",
+              "license": "CC BY-SA 4.0",
+              "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/"
+            }
+          },
+          "note": "Эмоциональная готовность к непривычному поведению подопечных: 3–2–1–0. Спокойствие — признак готовности к эмоциональной нагрузке, желание учиться у координатора — к обучению, отказ — против эмоционально тяжёлой работы.",
+          "options": [
+            {
+              "id": "a",
+              "text": "Спокойно: так проявляются его особенности, моя задача — быть рядом и поддержать",
+              "weights": {
+                "inclusion": 3,
+                "emotional": 1
+              },
+              "reasons": {
+                "inclusion": "Непривычное поведение подопечного не выбивает тебя из колеи: ты остаёшься рядом и поддерживаешь."
+              }
+            },
+            {
+              "id": "b",
+              "text": "Сначала растеряюсь, но справлюсь, если координатор подскажет, что делать",
+              "weights": {
+                "inclusion": 2,
+                "training": 1
+              },
+              "reasons": {
+                "inclusion": "Ты готов(а) учиться работать с людьми с ментальными особенностями вместе с координатором."
+              }
+            },
+            {
+              "id": "c",
+              "text": "Мне будет неловко, но я постараюсь этого не показывать",
+              "weights": {
+                "inclusion": 1
+              }
+            },
+            {
+              "id": "d",
+              "text": "Мне будет некомфортно — я бы выбрал(а) другую помощь",
+              "weights": {
+                "emotional": -1
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "seniors",
+      "group": "seniors",
+      "title": "Старшее поколение",
+      "description": "Забота, общение и помощь пожилым людям",
+      "questions": [
+        {
+          "id": "seniors-experience",
+          "parameter": "Общение с пожилыми",
+          "text": "Как часто ты общаешься с людьми старшего возраста — бабушками и дедушками, соседями, пожилыми знакомыми?",
+          "type": "single",
+          "image": {
+            "url": "images/seniors-experience.webp",
+            "alt": "Пожилой мужчина, девочка и женщина сидят на скамейке во дворе",
+            "position": "50% 35%",
+            "credit": {
+              "author": "katunchik",
+              "title": "Once upon a time someone else's grandparents was sitting on the bench, and my granddaughter Yanochka sat beside)) / Жили-были чужие дедушка и бабушка, и присела с ними на скамейку моя внучка Яночка)",
+              "source": "Flickr",
+              "url": "https://www.flickr.com/photos/12090392@N02/26738788192",
+              "license": "CC BY-SA 2.0",
+              "licenseUrl": "https://creativecommons.org/licenses/by-sa/2.0/"
+            }
+          },
+          "note": "Опыт общения с пожилыми людьми: 3–2–1–0.",
+          "options": [
+            {
+              "id": "a",
+              "text": "Постоянно: помогаю им, и мне интересно с ними разговаривать",
+              "weights": {
+                "seniors": 3
+              },
+              "reasons": {
+                "seniors": "Ты постоянно общаешься с людьми старшего возраста, помогаешь им — и тебе с ними интересно."
+              }
+            },
+            {
+              "id": "b",
+              "text": "Время от времени — на праздниках и семейных встречах",
+              "weights": {
+                "seniors": 2
+              },
+              "reasons": {
+                "seniors": "Ты время от времени общаешься со старшими родственниками и знакомыми."
+              }
+            },
+            {
+              "id": "c",
+              "text": "Редко, но хотел(а) бы чаще",
+              "weights": {
+                "seniors": 1
+              },
+              "reasons": {
+                "seniors": "Тебе хотелось бы чаще общаться с людьми старшего возраста."
+              }
+            },
+            {
+              "id": "d",
+              "text": "Почти не общаюсь, мне трудно найти с ними общий язык",
+              "weights": {}
+            }
+          ]
+        },
+        {
+          "id": "seniors-help",
+          "parameter": "Помощь пожилым",
+          "text": "Чем ты мог(ла) бы помочь пожилым людям?",
+          "type": "multiple",
+          "image": {
+            "url": "images/seniors-help.webp",
+            "alt": "Волонтёр помогает пожилому мужчине заполнить документы",
+            "position": "50% 40%",
+            "credit": {
+              "author": "Korean Resource Center 민족학교",
+              "title": "Senior Volunteers Elections Training 2012-05-01 (3)",
+              "source": "Flickr",
+              "url": "https://www.flickr.com/photos/53875604@N00/8034630286",
+              "license": "CC BY-SA 2.0",
+              "licenseUrl": "https://creativecommons.org/licenses/by-sa/2.0/"
+            }
+          },
+          "note": "Виды помощи пожилым, по 1 баллу. Озеленение двора с пожилыми соседями — на стыке с экологией (+1). Обучение смартфону — это обучение, помощь по хозяйству — физическая нагрузка и работа один на один, досуг и истории — работа один на один.",
+          "reasonTemplate": {
+            "seniors": "Ты готов(а) помогать пожилым людям: {options}."
+          },
+          "options": [
+            {
+              "id": "a",
+              "text": "Научить пользоваться смартфоном, мессенджерами и Госуслугами",
+              "short": "учить пользоваться смартфоном",
+              "weights": {
+                "seniors": 1,
+                "teaching": 1
+              }
+            },
+            {
+              "id": "b",
+              "text": "Приносить продукты и лекарства, помогать по дому",
+              "short": "приносить продукты и помогать по дому",
+              "weights": {
+                "seniors": 1,
+                "physical": 1,
+                "personal": 1
+              }
+            },
+            {
+              "id": "c",
+              "text": "Гулять, играть в настольные игры, слушать истории из жизни",
+              "short": "вместе гулять и проводить досуг",
+              "weights": {
+                "seniors": 1,
+                "personal": 1
+              }
+            },
+            {
+              "id": "d",
+              "text": "Вместе с пожилыми соседями озеленить двор: разбить клумбы, посадить кусты",
+              "short": "озеленять двор вместе с ними",
+              "weights": {
+                "seniors": 1,
+                "ecology": 1,
+                "outdoor": 1
+              },
+              "reasons": {
+                "ecology": "Тебе интересно озеленять двор вместе с пожилыми соседями."
+              }
+            },
+            {
+              "id": "e",
+              "text": "Ничего из этого мне не подходит",
+              "exclusive": true,
+              "weights": {}
+            }
+          ]
+        },
+        {
+          "id": "seniors-situation",
+          "parameter": "Обучение пожилого смартфону",
+          "text": "Ты учишь пожилого человека пользоваться смартфоном, а он в третий раз забывает, как отправить фотографию. Что сделаешь?",
+          "type": "single",
+          "situational": true,
+          "image": {
+            "url": "images/seniors-situation.webp",
+            "alt": "Пожилой мужчина учится работать за компьютером вместе с помощником",
+            "position": "50% 40%",
+            "credit": {
+              "author": "Knight Foundation",
+              "title": "Knight-Crane Convergence Lab",
+              "source": "Flickr",
+              "url": "https://www.flickr.com/photos/9133668@N08/6242015486",
+              "license": "CC BY-SA 2.0",
+              "licenseUrl": "https://creativecommons.org/licenses/by-sa/2.0/"
+            }
+          },
+          "note": "Терпение и поддержка самостоятельности: показать ещё раз и записать шаги (3), попросить повторить самому (2); сделать за человека или отмахнуться — ошибки (0). Оба верных ответа — признак умения обучать.",
+          "options": [
+            {
+              "id": "a",
+              "text": "Сделаю всё сам(а) — так быстрее для нас обоих",
+              "weights": {}
+            },
+            {
+              "id": "b",
+              "text": "Спокойно покажу ещё раз и запишу шаги крупными буквами на листке",
+              "weights": {
+                "seniors": 3,
+                "teaching": 1
+              },
+              "reasons": {
+                "seniors": "Ты терпеливо объясняешь и подстраиваешься под темп пожилого человека."
+              }
+            },
+            {
+              "id": "c",
+              "text": "Покажу ещё раз и попрошу повторить самостоятельно",
+              "weights": {
+                "seniors": 2,
+                "teaching": 1
+              },
+              "reasons": {
+                "seniors": "Ты не делаешь всё за человека, а помогаешь ему научиться самому."
+              }
+            },
+            {
+              "id": "d",
+              "text": "Скажу, что это элементарно, и посоветую спросить у внуков",
+              "weights": {}
+            }
+          ]
+        },
+        {
+          "id": "seniors-readiness",
+          "parameter": "Готовность к болезням и утратам",
+          "text": "Подопечные в домах престарелых часто болеют, и с некоторыми со временем приходится прощаться. Как ты к этому относишься?",
+          "type": "single",
+          "image": {
+            "url": "images/seniors-readiness.webp",
+            "alt": "Пожилая женщина в белой кепке улыбается",
+            "position": "50% 35%",
+            "credit": {
+              "author": "Gia_Gandi",
+              "title": "бабушка",
+              "source": "Flickr",
+              "url": "https://www.flickr.com/photos/45847969@N06/9679976036",
+              "license": "CC BY 2.0",
+              "licenseUrl": "https://creativecommons.org/licenses/by/2.0/"
+            }
+          },
+          "note": "Готовность к тяжёлой стороне работы с пожилыми — болезням и утратам: 3–2–1–0 для сферы и от +2 до −2 для эмоциональной нагрузки.",
+          "options": [
+            {
+              "id": "a",
+              "text": "Понимаю, что это часть жизни, — мне важно, чтобы их дни были теплее",
+              "weights": {
+                "seniors": 3,
+                "emotional": 2
+              },
+              "reasons": {
+                "seniors": "Ты готов(а) к непростой стороне работы с пожилыми и хочешь, чтобы их дни были теплее."
+              }
+            },
+            {
+              "id": "b",
+              "text": "Будет тяжело, но я справлюсь, если рядом будут команда и психолог",
+              "weights": {
+                "seniors": 2,
+                "emotional": 1
+              },
+              "reasons": {
+                "seniors": "Ты готов(а) к эмоциональной нагрузке, если рядом будут команда и психолог."
+              }
+            },
+            {
+              "id": "c",
+              "text": "Пока не знаю, как я с этим справлюсь",
+              "weights": {
+                "seniors": 1
+              }
+            },
+            {
+              "id": "d",
+              "text": "Для меня это слишком тяжело эмоционально",
+              "weights": {
+                "emotional": -2
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "ecology",
+      "group": "ecology",
+      "title": "Экология",
+      "description": "Экоакции, проекты и просвещение",
+      "questions": [
+        {
+          "id": "ecology-habits",
+          "parameter": "Экология в повседневной жизни",
+          "text": "Насколько экология — часть твоей повседневной жизни?",
+          "type": "single",
+          "image": {
+            "url": "images/ecology-habits.webp",
+            "alt": "Сетчатый контейнер для пластика во дворе московского дома",
+            "position": "40% 60%",
+            "credit": {
+              "author": "AlexChirkin",
+              "title": "Раздельный сбор мусора Москва Медведково",
+              "source": "Wikimedia Commons",
+              "url": "https://commons.wikimedia.org/wiki/File:%D0%A0%D0%B0%D0%B7%D0%B4%D0%B5%D0%BB%D1%8C%D0%BD%D1%8B%D0%B9_%D1%81%D0%B1%D0%BE%D1%80_%D0%BC%D1%83%D1%81%D0%BE%D1%80%D0%B0_%D0%9C%D0%BE%D1%81%D0%BA%D0%B2%D0%B0_%D0%9C%D0%B5%D0%B4%D0%B2%D0%B5%D0%B4%D0%BA%D0%BE%D0%B2%D0%BE.jpg",
+              "license": "CC0",
+              "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/"
+            }
+          },
+          "note": "Экологичные привычки как признак интереса к теме: 3–2–1–0.",
+          "options": [
+            {
+              "id": "a",
+              "text": "Сортирую отходы, сдаю вторсырьё и хожу на экоакции",
+              "weights": {
+                "ecology": 3
+              },
+              "reasons": {
+                "ecology": "Ты уже живёшь экологично: сортируешь отходы и ходишь на экоакции."
+              }
+            },
+            {
+              "id": "b",
+              "text": "Иногда: сдаю батарейки, ношу с собой шопер или бутылку для воды",
+              "weights": {
+                "ecology": 2
+              },
+              "reasons": {
+                "ecology": "У тебя уже есть экопривычки — пусть пока и не все."
+              }
+            },
+            {
+              "id": "c",
+              "text": "Пока никак, но хочу разобраться",
+              "weights": {
+                "ecology": 1
+              },
+              "reasons": {
+                "ecology": "Тебе хочется разобраться в экологичном образе жизни."
+              }
+            },
+            {
+              "id": "d",
+              "text": "Никак, эта тема меня мало волнует",
+              "weights": {}
+            }
+          ]
+        },
+        {
+          "id": "ecology-projects",
+          "parameter": "Интересные экопроекты",
+          "text": "В каких экопроектах тебе было бы интересно поучаствовать?",
+          "type": "multiple",
+          "image": {
+            "url": "images/ecology-projects.webp",
+            "alt": "Волонтёры вешают на дерево скворечник",
+            "position": "55% 40%",
+            "credit": {
+              "author": "Илья Питалёв",
+              "title": "Media-subbotnik 2011 04",
+              "source": "Wikimedia Commons",
+              "url": "https://commons.wikimedia.org/wiki/File:Media-subbotnik_2011_04.jpg",
+              "license": "CC BY 4.0",
+              "licenseUrl": "https://creativecommons.org/licenses/by/4.0/"
+            }
+          },
+          "note": "Интерес к экопроектам, по 1 баллу. Экоуроки для школьников — на стыке с работой с детьми (+1) и обучением. Уборка и посадка деревьев — физическая работа на улице, помощь заповедникам — работа на улице.",
+          "reasonTemplate": {
+            "ecology": "Тебе интересны экопроекты: {options}."
+          },
+          "options": [
+            {
+              "id": "a",
+              "text": "Уборка берегов рек, лесов и парков",
+              "short": "уборка берегов и лесов",
+              "weights": {
+                "ecology": 1,
+                "physical": 1,
+                "outdoor": 1
+              }
+            },
+            {
+              "id": "b",
+              "text": "Посадка деревьев и уход за городской зеленью",
+              "short": "посадка деревьев",
+              "weights": {
+                "ecology": 1,
+                "physical": 1,
+                "outdoor": 1
+              }
+            },
+            {
+              "id": "c",
+              "text": "Экоуроки и квесты о природе для школьников",
+              "short": "экоуроки для школьников",
+              "weights": {
+                "children": 1,
+                "ecology": 1,
+                "teaching": 1
+              },
+              "reasons": {
+                "children": "Тебе интересно проводить экоуроки для школьников."
+              }
+            },
+            {
+              "id": "d",
+              "text": "Помощь заповедникам: учёт птиц, обустройство экотроп",
+              "short": "помощь заповедникам",
+              "weights": {
+                "ecology": 1,
+                "outdoor": 1
+              }
+            },
+            {
+              "id": "e",
+              "text": "Ни в каких — мне это не близко",
+              "exclusive": true,
+              "weights": {}
+            }
+          ]
+        },
+        {
+          "id": "ecology-situation",
+          "parameter": "Приём грязного вторсырья",
+          "text": "На акцию по сбору вторсырья человек приносит пакет, где вперемешку пластик, стекло и остатки еды. Что сделаешь?",
+          "type": "single",
+          "situational": true,
+          "image": {
+            "url": "images/ecology-situation.webp",
+            "alt": "Волонтёры акции по раздельному сбору с мешками вторсырья",
+            "position": "50% 50%",
+            "credit": {
+              "author": "mos.ru",
+              "title": "Раздельный сбор отходов. Волонтёры",
+              "source": "Wikimedia Commons",
+              "url": "https://commons.wikimedia.org/wiki/File:%D0%A0%D0%B0%D0%B7%D0%B4%D0%B5%D0%BB%D1%8C%D0%BD%D1%8B%D0%B9_%D1%81%D0%B1%D0%BE%D1%80_%D0%BE%D1%82%D1%85%D0%BE%D0%B4%D0%BE%D0%B2._%D0%92%D0%BE%D0%BB%D0%BE%D0%BD%D1%82%D1%91%D1%80%D1%8B.jpg",
+              "license": "CC BY 4.0",
+              "licenseUrl": "https://creativecommons.org/licenses/by/4.0/"
+            }
+          },
+          "note": "Знание правил раздельного сбора и умение объяснять: помочь отобрать и объяснить (3, и это ещё и обучение), принять только чистое (2); принять грязное вторсырьё или грубо отказать — ошибки (0).",
+          "options": [
+            {
+              "id": "a",
+              "text": "Приму всё как есть — главное, что человек пришёл",
+              "weights": {}
+            },
+            {
+              "id": "b",
+              "text": "Вежливо объясню, как готовить вторсырьё, и помогу отобрать то, что можно принять",
+              "weights": {
+                "ecology": 3,
+                "teaching": 1
+              },
+              "reasons": {
+                "ecology": "Ты знаешь правила раздельного сбора и умеешь доброжелательно их объяснить."
+              }
+            },
+            {
+              "id": "c",
+              "text": "Приму только чистое вторсырьё, а остальное попрошу унести",
+              "weights": {
+                "ecology": 2
+              },
+              "reasons": {
+                "ecology": "Ты знаешь, что грязное вторсырьё может испортить всю партию."
+              }
+            },
+            {
+              "id": "d",
+              "text": "Откажу: пусть сначала разберётся, как правильно",
+              "weights": {}
+            }
+          ]
+        },
+        {
+          "id": "ecology-readiness",
+          "parameter": "Отношение к грязной работе",
+          "text": "Экологическая работа бывает грязной и однообразной: разбирать мусор, работать под дождём, месяцами ждать результата. Как тебе такое?",
+          "type": "single",
+          "image": {
+            "url": "images/ecology-readiness.webp",
+            "alt": "Жители с лопатами убирают парк на весеннем субботнике",
+            "position": "50% 45%",
+            "credit": {
+              "author": "mos.ru / РИА Новости (Михаил Фомичев)",
+              "title": "2008 All-City Subbotnik in Birylyovo 03",
+              "source": "Wikimedia Commons",
+              "url": "https://commons.wikimedia.org/wiki/File:2008_All-City_Subbotnik_in_Birylyovo_03.jpg",
+              "license": "CC BY 4.0",
+              "licenseUrl": "https://creativecommons.org/licenses/by/4.0/"
+            }
+          },
+          "note": "Готовность к физической и однообразной работе: 3–2–1–0 для сферы. Первый вариант — прямой признак готовности к физической работе на улице, последний — против неё; «разово можно» — против регулярности.",
+          "options": [
+            {
+              "id": "a",
+              "text": "Нормально: перчатки, сапоги — и вперёд, мне нравится физическая работа",
+              "weights": {
+                "ecology": 3,
+                "physical": 2,
+                "outdoor": 2
+              },
+              "reasons": {
+                "ecology": "Тебя не пугает грязная работа под открытым небом — перчатки, сапоги и вперёд."
+              }
+            },
+            {
+              "id": "b",
+              "text": "Готов(а), если в команде хорошая атмосфера и понятна цель",
+              "weights": {
+                "ecology": 2,
+                "outdoor": 1
+              },
+              "reasons": {
+                "ecology": "Ты готов(а) к физической работе, если в команде хорошая атмосфера и понятна цель."
+              }
+            },
+            {
+              "id": "c",
+              "text": "Разово можно, но постоянно — вряд ли",
+              "weights": {
+                "ecology": 1,
+                "regular": -1
+              }
+            },
+            {
+              "id": "d",
+              "text": "Предпочитаю помогать в тепле и чистоте",
+              "weights": {
+                "physical": -1,
+                "outdoor": -2
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "rules": [
+    {
+      "id": "r1",
+      "title": "П1",
+      "if": [
+        {
+          "question": "children-experience",
+          "option": "d"
+        }
+      ],
+      "then": {
+        "question": "children-commitment",
+        "option": "d"
+      },
+      "note": "Если с детьми неуютно, спрашивать о многомесячных встречах с детьми из детского дома незачем: ответ очевиден."
+    },
+    {
+      "id": "r2",
+      "title": "П2",
+      "if": [
+        {
+          "question": "general-time",
+          "option": "c"
+        }
+      ],
+      "then": {
+        "question": "children-commitment",
+        "option": "d"
+      },
+      "note": "Человек, у которого есть время только на разовые акции, не сможет приходить к ребёнку регулярно."
+    },
+    {
+      "id": "r3",
+      "title": "П3",
+      "if": [
+        {
+          "question": "ecology-habits",
+          "option": "d"
+        }
+      ],
+      "then": {
+        "question": "ecology-projects",
+        "option": "e"
+      },
+      "note": "Если экология человека не волнует, выбирать из экопроектов ему не из чего."
+    },
+    {
+      "id": "r4",
+      "title": "П4",
+      "if": [
+        {
+          "question": "general-physical",
+          "option": "d"
+        }
+      ],
+      "then": {
+        "question": "ecology-readiness",
+        "option": "d"
+      },
+      "note": "При противопоказаниях к физической нагрузке грязная работа под открытым небом исключена."
+    }
+  ],
+  "testProfiles": [
+    {
+      "name": "Аня, вожатая",
+      "story": "Три лета работала вожатой, ведёт кружок для младших школьников, любит шумные игры.",
+      "answers": {
+        "general-free-day": [
+          "a"
+        ],
+        "general-concerns": [
+          "a",
+          "c"
+        ],
+        "general-setting": [
+          "a"
+        ],
+        "general-teamwork": [
+          "a"
+        ],
+        "general-time": [
+          "a"
+        ],
+        "general-training": [
+          "a"
+        ],
+        "general-physical": [
+          "a"
+        ],
+        "children-experience": [
+          "a"
+        ],
+        "children-activities": [
+          "a",
+          "b",
+          "c"
+        ],
+        "children-situation": [
+          "b"
+        ],
+        "children-commitment": [
+          "a"
+        ],
+        "inclusion-experience": [
+          "c"
+        ],
+        "inclusion-skills": [
+          "a"
+        ],
+        "inclusion-situation": [
+          "d"
+        ],
+        "inclusion-readiness": [
+          "b"
+        ],
+        "seniors-experience": [
+          "b"
+        ],
+        "seniors-help": [
+          "a"
+        ],
+        "seniors-situation": [
+          "c"
+        ],
+        "seniors-readiness": [
+          "c"
+        ],
+        "ecology-habits": [
+          "b"
+        ],
+        "ecology-projects": [
+          "a",
+          "c"
+        ],
+        "ecology-situation": [
+          "c"
+        ],
+        "ecology-readiness": [
+          "c"
+        ]
+      },
+      "expectGroup": [
+        "children"
+      ],
+      "expectTop": [
+        "counselor",
+        "hospital",
+        "tutor",
+        "mentor"
+      ],
+      "expectWeak": false
+    },
+    {
+      "name": "Дима, брат девочки с ДЦП",
+      "story": "У младшей сестры ДЦП, с детства помогает ей в городе, хочет выучить жестовый язык.",
+      "answers": {
+        "general-free-day": [
+          "b"
+        ],
+        "general-concerns": [
+          "b"
+        ],
+        "general-setting": [
+          "c"
+        ],
+        "general-teamwork": [
+          "d"
+        ],
+        "general-time": [
+          "a"
+        ],
+        "general-training": [
+          "a"
+        ],
+        "general-physical": [
+          "a"
+        ],
+        "children-experience": [
+          "b"
+        ],
+        "children-activities": [
+          "d"
+        ],
+        "children-situation": [
+          "d"
+        ],
+        "children-commitment": [
+          "c"
+        ],
+        "inclusion-experience": [
+          "a"
+        ],
+        "inclusion-skills": [
+          "a",
+          "b",
+          "c"
+        ],
+        "inclusion-situation": [
+          "c"
+        ],
+        "inclusion-readiness": [
+          "a"
+        ],
+        "seniors-experience": [
+          "c"
+        ],
+        "seniors-help": [
+          "b"
+        ],
+        "seniors-situation": [
+          "c"
+        ],
+        "seniors-readiness": [
+          "c"
+        ],
+        "ecology-habits": [
+          "c"
+        ],
+        "ecology-projects": [
+          "b"
+        ],
+        "ecology-situation": [
+          "c"
+        ],
+        "ecology-readiness": [
+          "b"
+        ]
+      },
+      "expectGroup": [
+        "inclusion"
+      ],
+      "expectTop": [
+        "escort",
+        "signLanguage",
+        "specialKids",
+        "inclusiveSport"
+      ],
+      "expectWeak": false
+    },
+    {
+      "name": "Катя, внучка",
+      "story": "Каждые выходные у бабушки, научила её и соседок пользоваться смартфоном.",
+      "answers": {
+        "general-free-day": [
+          "c"
+        ],
+        "general-concerns": [
+          "a",
+          "c"
+        ],
+        "general-setting": [
+          "b"
+        ],
+        "general-teamwork": [
+          "c"
+        ],
+        "general-time": [
+          "a"
+        ],
+        "general-training": [
+          "b"
+        ],
+        "general-physical": [
+          "b"
+        ],
+        "children-experience": [
+          "c"
+        ],
+        "children-activities": [
+          "a"
+        ],
+        "children-situation": [
+          "b"
+        ],
+        "children-commitment": [
+          "c"
+        ],
+        "inclusion-experience": [
+          "c"
+        ],
+        "inclusion-skills": [
+          "d"
+        ],
+        "inclusion-situation": [
+          "d"
+        ],
+        "inclusion-readiness": [
+          "b"
+        ],
+        "seniors-experience": [
+          "a"
+        ],
+        "seniors-help": [
+          "a",
+          "b",
+          "c"
+        ],
+        "seniors-situation": [
+          "b"
+        ],
+        "seniors-readiness": [
+          "b"
+        ],
+        "ecology-habits": [
+          "b"
+        ],
+        "ecology-projects": [
+          "b"
+        ],
+        "ecology-situation": [
+          "c"
+        ],
+        "ecology-readiness": [
+          "c"
+        ]
+      },
+      "expectGroup": [
+        "seniors"
+      ],
+      "expectTop": [
+        "digital",
+        "homeHelp",
+        "careHome",
+        "phoneFriend"
+      ],
+      "expectWeak": false
+    },
+    {
+      "name": "Лёша, экоактивист",
+      "story": "Сортирует отходы, ездит на уборки берегов и летом волонтёрит в заповеднике.",
+      "answers": {
+        "general-free-day": [
+          "d"
+        ],
+        "general-concerns": [
+          "d"
+        ],
+        "general-setting": [
+          "d"
+        ],
+        "general-teamwork": [
+          "b"
+        ],
+        "general-time": [
+          "b"
+        ],
+        "general-training": [
+          "b"
+        ],
+        "general-physical": [
+          "a"
+        ],
+        "children-experience": [
+          "c"
+        ],
+        "children-activities": [
+          "b"
+        ],
+        "children-situation": [
+          "d"
+        ],
+        "children-commitment": [
+          "d"
+        ],
+        "inclusion-experience": [
+          "c"
+        ],
+        "inclusion-skills": [
+          "a"
+        ],
+        "inclusion-situation": [
+          "d"
+        ],
+        "inclusion-readiness": [
+          "c"
+        ],
+        "seniors-experience": [
+          "b"
+        ],
+        "seniors-help": [
+          "d"
+        ],
+        "seniors-situation": [
+          "c"
+        ],
+        "seniors-readiness": [
+          "c"
+        ],
+        "ecology-habits": [
+          "a"
+        ],
+        "ecology-projects": [
+          "a",
+          "b",
+          "d"
+        ],
+        "ecology-situation": [
+          "b"
+        ],
+        "ecology-readiness": [
+          "a"
+        ]
+      },
+      "expectGroup": [
+        "ecology"
+      ],
+      "expectTop": [
+        "cleanup",
+        "reserve",
+        "greening"
+      ],
+      "expectWeak": false
+    },
+    {
+      "name": "Маша, будущий педагог-эколог",
+      "story": "Учится на педагога, ведёт экоуроки в школе — одинаково тянется к детям и к природе.",
+      "answers": {
+        "general-free-day": [
+          "d"
+        ],
+        "general-concerns": [
+          "a",
+          "d"
+        ],
+        "general-setting": [
+          "a"
+        ],
+        "general-teamwork": [
+          "a"
+        ],
+        "general-time": [
+          "a"
+        ],
+        "general-training": [
+          "a"
+        ],
+        "general-physical": [
+          "b"
+        ],
+        "children-experience": [
+          "b"
+        ],
+        "children-activities": [
+          "a",
+          "b",
+          "c"
+        ],
+        "children-situation": [
+          "b"
+        ],
+        "children-commitment": [
+          "b"
+        ],
+        "inclusion-experience": [
+          "c"
+        ],
+        "inclusion-skills": [
+          "e"
+        ],
+        "inclusion-situation": [
+          "d"
+        ],
+        "inclusion-readiness": [
+          "c"
+        ],
+        "seniors-experience": [
+          "c"
+        ],
+        "seniors-help": [
+          "d"
+        ],
+        "seniors-situation": [
+          "c"
+        ],
+        "seniors-readiness": [
+          "c"
+        ],
+        "ecology-habits": [
+          "a"
+        ],
+        "ecology-projects": [
+          "a",
+          "b",
+          "c"
+        ],
+        "ecology-situation": [
+          "b"
+        ],
+        "ecology-readiness": [
+          "b"
+        ]
+      },
+      "expectGroup": [
+        "children",
+        "ecology"
+      ],
+      "expectTop": [
+        "ecoTeacher"
+      ],
+      "expectClose": true,
+      "expectWeak": false
+    },
+    {
+      "name": "Олег, спокойный интроверт",
+      "story": "Не любит шум и физическую работу, умеет слушать, терпеливо объясняет. С детьми ему неуютно.",
+      "answers": {
+        "general-free-day": [
+          "c"
+        ],
+        "general-concerns": [
+          "b",
+          "c"
+        ],
+        "general-setting": [
+          "b"
+        ],
+        "general-teamwork": [
+          "c"
+        ],
+        "general-time": [
+          "a"
+        ],
+        "general-training": [
+          "b"
+        ],
+        "general-physical": [
+          "c"
+        ],
+        "children-experience": [
+          "d"
+        ],
+        "children-activities": [
+          "e"
+        ],
+        "children-situation": [
+          "b"
+        ],
+        "inclusion-experience": [
+          "b"
+        ],
+        "inclusion-skills": [
+          "a",
+          "d"
+        ],
+        "inclusion-situation": [
+          "c"
+        ],
+        "inclusion-readiness": [
+          "b"
+        ],
+        "seniors-experience": [
+          "b"
+        ],
+        "seniors-help": [
+          "a",
+          "c"
+        ],
+        "seniors-situation": [
+          "b"
+        ],
+        "seniors-readiness": [
+          "b"
+        ],
+        "ecology-habits": [
+          "c"
+        ],
+        "ecology-projects": [
+          "d"
+        ],
+        "ecology-situation": [
+          "c"
+        ],
+        "ecology-readiness": [
+          "d"
+        ]
+      },
+      "expectGroup": [
+        "seniors"
+      ],
+      "expectTop": [
+        "phoneFriend",
+        "memories",
+        "digital",
+        "signLanguage",
+        "audioDescription"
+      ],
+      "expectWeak": false
+    },
+    {
+      "name": "Вера, которой интересно всё",
+      "story": "Везде выбирает самые активные ответы, но в общем блоке ставит на первое место инклюзию.",
+      "answers": {
+        "general-free-day": [
+          "b"
+        ],
+        "general-concerns": [
+          "a",
+          "b",
+          "c",
+          "d"
+        ],
+        "general-setting": [
+          "c"
+        ],
+        "general-teamwork": [
+          "d"
+        ],
+        "general-time": [
+          "a"
+        ],
+        "general-training": [
+          "a"
+        ],
+        "general-physical": [
+          "a"
+        ],
+        "children-experience": [
+          "a"
+        ],
+        "children-activities": [
+          "a",
+          "b",
+          "c",
+          "d"
+        ],
+        "children-situation": [
+          "b"
+        ],
+        "children-commitment": [
+          "a"
+        ],
+        "inclusion-experience": [
+          "b"
+        ],
+        "inclusion-skills": [
+          "a",
+          "b",
+          "c",
+          "d"
+        ],
+        "inclusion-situation": [
+          "c"
+        ],
+        "inclusion-readiness": [
+          "a"
+        ],
+        "seniors-experience": [
+          "a"
+        ],
+        "seniors-help": [
+          "a",
+          "b",
+          "c",
+          "d"
+        ],
+        "seniors-situation": [
+          "b"
+        ],
+        "seniors-readiness": [
+          "a"
+        ],
+        "ecology-habits": [
+          "b"
+        ],
+        "ecology-projects": [
+          "a",
+          "b",
+          "c",
+          "d"
+        ],
+        "ecology-situation": [
+          "b"
+        ],
+        "ecology-readiness": [
+          "b"
+        ]
+      },
+      "expectGroup": [
+        "inclusion"
+      ],
+      "expectTop": [
+        "escort",
+        "signLanguage",
+        "inclusiveArt",
+        "specialKids",
+        "inclusiveSport",
+        "audioDescription",
+        "accessibility"
+      ],
+      "expectWeak": false
+    },
+    {
+      "name": "Лена, будущий дефектолог",
+      "story": "Учится на дефектолога и занимается с детьми с аутизмом: одинаково близки и дети, и инклюзия.",
+      "answers": {
+        "general-free-day": [
+          "a"
+        ],
+        "general-concerns": [
+          "a",
+          "b"
+        ],
+        "general-setting": [
+          "c"
+        ],
+        "general-teamwork": [
+          "d"
+        ],
+        "general-time": [
+          "a"
+        ],
+        "general-training": [
+          "a"
+        ],
+        "general-physical": [
+          "b"
+        ],
+        "children-experience": [
+          "a"
+        ],
+        "children-activities": [
+          "a",
+          "b",
+          "d"
+        ],
+        "children-situation": [
+          "b"
+        ],
+        "children-commitment": [
+          "a"
+        ],
+        "inclusion-experience": [
+          "b"
+        ],
+        "inclusion-skills": [
+          "a",
+          "b"
+        ],
+        "inclusion-situation": [
+          "c"
+        ],
+        "inclusion-readiness": [
+          "a"
+        ],
+        "seniors-experience": [
+          "c"
+        ],
+        "seniors-help": [
+          "c"
+        ],
+        "seniors-situation": [
+          "c"
+        ],
+        "seniors-readiness": [
+          "c"
+        ],
+        "ecology-habits": [
+          "c"
+        ],
+        "ecology-projects": [
+          "c"
+        ],
+        "ecology-situation": [
+          "c"
+        ],
+        "ecology-readiness": [
+          "c"
+        ]
+      },
+      "expectGroup": [
+        "children",
+        "inclusion"
+      ],
+      "expectTop": [
+        "specialKids"
+      ],
+      "expectClose": true,
+      "expectWeak": false
+    },
+    {
+      "name": "Таня, организатор концертов",
+      "story": "Устраивает концерты и праздники, хочет каждую неделю ходить в дом престарелых, к тяжёлым темам готова.",
+      "answers": {
+        "general-free-day": [
+          "c"
+        ],
+        "general-concerns": [
+          "c"
+        ],
+        "general-setting": [
+          "b"
+        ],
+        "general-teamwork": [
+          "b"
+        ],
+        "general-time": [
+          "a"
+        ],
+        "general-training": [
+          "b"
+        ],
+        "general-physical": [
+          "b"
+        ],
+        "children-experience": [
+          "c"
+        ],
+        "children-activities": [
+          "b"
+        ],
+        "children-situation": [
+          "d"
+        ],
+        "children-commitment": [
+          "c"
+        ],
+        "inclusion-experience": [
+          "c"
+        ],
+        "inclusion-skills": [
+          "d"
+        ],
+        "inclusion-situation": [
+          "d"
+        ],
+        "inclusion-readiness": [
+          "b"
+        ],
+        "seniors-experience": [
+          "a"
+        ],
+        "seniors-help": [
+          "c"
+        ],
+        "seniors-situation": [
+          "b"
+        ],
+        "seniors-readiness": [
+          "a"
+        ],
+        "ecology-habits": [
+          "c"
+        ],
+        "ecology-projects": [
+          "e"
+        ],
+        "ecology-situation": [
+          "c"
+        ],
+        "ecology-readiness": [
+          "c"
+        ]
+      },
+      "expectGroup": [
+        "seniors"
+      ],
+      "expectTop": [
+        "careHome",
+        "hospice",
+        "memories"
+      ],
+      "expectWeak": false
+    },
+    {
+      "name": "Саша, пока не определился",
+      "story": "Опыта нет, ни одно направление не зажигает, на многое отвечает «пока не знаю».",
+      "answers": {
+        "general-free-day": [
+          "d"
+        ],
+        "general-concerns": [
+          "c"
+        ],
+        "general-setting": [
+          "b"
+        ],
+        "general-teamwork": [
+          "b"
+        ],
+        "general-time": [
+          "d"
+        ],
+        "general-training": [
+          "b"
+        ],
+        "general-physical": [
+          "b"
+        ],
+        "children-experience": [
+          "c"
+        ],
+        "children-activities": [
+          "e"
+        ],
+        "children-situation": [
+          "c"
+        ],
+        "children-commitment": [
+          "c"
+        ],
+        "inclusion-experience": [
+          "c"
+        ],
+        "inclusion-skills": [
+          "e"
+        ],
+        "inclusion-situation": [
+          "d"
+        ],
+        "inclusion-readiness": [
+          "c"
+        ],
+        "seniors-experience": [
+          "c"
+        ],
+        "seniors-help": [
+          "e"
+        ],
+        "seniors-situation": [
+          "c"
+        ],
+        "seniors-readiness": [
+          "c"
+        ],
+        "ecology-habits": [
+          "c"
+        ],
+        "ecology-projects": [
+          "a"
+        ],
+        "ecology-situation": [
+          "c"
+        ],
+        "ecology-readiness": [
+          "c"
+        ]
+      },
+      "expectGroup": [
+        "ecology",
+        "seniors"
+      ],
+      "expectWeak": true
+    },
+    {
+      "name": "Ира, у которой мало времени",
+      "story": "Готова помогать только на разовых событиях, учиться заранее не хочет, любит движение и праздники.",
+      "answers": {
+        "general-free-day": [
+          "b"
+        ],
+        "general-concerns": [
+          "b",
+          "d"
+        ],
+        "general-setting": [
+          "a"
+        ],
+        "general-teamwork": [
+          "a"
+        ],
+        "general-time": [
+          "c"
+        ],
+        "general-training": [
+          "c"
+        ],
+        "general-physical": [
+          "a"
+        ],
+        "children-experience": [
+          "c"
+        ],
+        "children-activities": [
+          "b"
+        ],
+        "children-situation": [
+          "d"
+        ],
+        "inclusion-experience": [
+          "b"
+        ],
+        "inclusion-skills": [
+          "a"
+        ],
+        "inclusion-situation": [
+          "c"
+        ],
+        "inclusion-readiness": [
+          "b"
+        ],
+        "seniors-experience": [
+          "c"
+        ],
+        "seniors-help": [
+          "e"
+        ],
+        "seniors-situation": [
+          "c"
+        ],
+        "seniors-readiness": [
+          "c"
+        ],
+        "ecology-habits": [
+          "b"
+        ],
+        "ecology-projects": [
+          "a",
+          "b"
+        ],
+        "ecology-situation": [
+          "c"
+        ],
+        "ecology-readiness": [
+          "a"
+        ]
+      },
+      "expectGroup": [
+        "inclusion",
+        "ecology"
+      ],
+      "expectTop": [
+        "inclusiveSport",
+        "cleanup",
+        "accessibility",
+        "escort",
+        "greening"
+      ],
+      "expectWeak": false
+    },
+    {
+      "name": "Гоша, которому нельзя нагрузку",
+      "story": "После операции противопоказана физическая нагрузка; живёт с бабушкой, любит поговорить.",
+      "answers": {
+        "general-free-day": [
+          "c"
+        ],
+        "general-concerns": [
+          "c"
+        ],
+        "general-setting": [
+          "b"
+        ],
+        "general-teamwork": [
+          "c"
+        ],
+        "general-time": [
+          "a"
+        ],
+        "general-training": [
+          "b"
+        ],
+        "general-physical": [
+          "d"
+        ],
+        "children-experience": [
+          "c"
+        ],
+        "children-activities": [
+          "a"
+        ],
+        "children-situation": [
+          "b"
+        ],
+        "children-commitment": [
+          "c"
+        ],
+        "inclusion-experience": [
+          "c"
+        ],
+        "inclusion-skills": [
+          "b"
+        ],
+        "inclusion-situation": [
+          "d"
+        ],
+        "inclusion-readiness": [
+          "b"
+        ],
+        "seniors-experience": [
+          "a"
+        ],
+        "seniors-help": [
+          "a",
+          "c"
+        ],
+        "seniors-situation": [
+          "b"
+        ],
+        "seniors-readiness": [
+          "b"
+        ],
+        "ecology-habits": [
+          "c"
+        ],
+        "ecology-projects": [
+          "e"
+        ],
+        "ecology-situation": [
+          "c"
+        ]
+      },
+      "expectGroup": [
+        "seniors"
+      ],
+      "expectTop": [
+        "phoneFriend",
+        "memories",
+        "digital"
+      ],
+      "expectWeak": false
+    },
+    {
+      "name": "Костя, программист",
+      "story": "Дети и экология его не трогают, времени мало, нагрузка противопоказана; зато умеет объяснять технику.",
+      "answers": {
+        "general-free-day": [
+          "c"
+        ],
+        "general-concerns": [
+          "c"
+        ],
+        "general-setting": [
+          "b"
+        ],
+        "general-teamwork": [
+          "b"
+        ],
+        "general-time": [
+          "c"
+        ],
+        "general-training": [
+          "b"
+        ],
+        "general-physical": [
+          "d"
+        ],
+        "children-experience": [
+          "d"
+        ],
+        "children-activities": [
+          "e"
+        ],
+        "children-situation": [
+          "a"
+        ],
+        "inclusion-experience": [
+          "c"
+        ],
+        "inclusion-skills": [
+          "d"
+        ],
+        "inclusion-situation": [
+          "d"
+        ],
+        "inclusion-readiness": [
+          "c"
+        ],
+        "seniors-experience": [
+          "b"
+        ],
+        "seniors-help": [
+          "a"
+        ],
+        "seniors-situation": [
+          "b"
+        ],
+        "seniors-readiness": [
+          "c"
+        ],
+        "ecology-habits": [
+          "d"
+        ],
+        "ecology-situation": [
+          "a"
+        ]
+      },
+      "expectGroup": [
+        "seniors"
+      ],
+      "expectTop": [
+        "digital",
+        "memories"
+      ],
+      "expectWeak": false
+    }
+  ]
+}

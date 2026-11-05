@@ -1,11 +1,11 @@
-// Эталон результатов примера: что давала сданная версия на всех персонах и случайных анкетах.
+// Эталон результатов примера: что давала сданная версия на всех тестовых профилях и случайных анкетах.
 // Снят со старого движка до перехода на новый формат. Если результаты разошлись, npm run check
 // падает. Обновлять эталон (npm run check -- --update-baseline) можно только после намеренной
 // правки примера: для правок движка расхождение и есть поломка.
 
 import { readFileSync, writeFileSync } from 'node:fs';
-import type { Quiz } from '../src/engine/types.ts';
-import { runPersonas, simulate } from './lib.ts';
+import type { KnowledgeBase } from '../src/engine/types.ts';
+import { runExampleProfiles, simulate } from './lib.ts';
 
 const FILE = new URL('./example-baseline.json', import.meta.url);
 
@@ -18,18 +18,21 @@ interface Snapshot {
   random: object;
 }
 
-function takeSnapshot(quiz: Quiz): Snapshot {
-  const profiles = runPersonas(quiz).map(({ persona, evaluation, asked }) => ({
-    name: persona.name,
-    asked,
-    winner: evaluation.winner.direction.id,
-    isClose: evaluation.isClose,
-    isWeak: evaluation.isWeak,
-    groups: evaluation.ranking.map((s) => [s.direction.id, s.points, s.max, round(s.percent), s.generalPoints]),
-    objects: evaluation.objects.map((o) => [o.object.id, round(o.score)]),
-    reasons: evaluation.reasons.map((r) => r.text),
-  }));
-  const sim = simulate(quiz);
+function takeSnapshot(base: KnowledgeBase): Snapshot {
+  const profiles = runExampleProfiles(base).map(({ profile, evaluation, asked }) => {
+    const verdict = evaluation.verdict!;
+    return {
+      name: profile.name,
+      asked,
+      winner: verdict.winner.group.id,
+      isClose: verdict.isClose,
+      isWeak: verdict.isWeak,
+      groups: verdict.ranking.map((s) => [s.group.id, s.points, s.max, round(s.percent), s.generalPoints]),
+      objects: evaluation.objects.map((o) => [o.object.id, round(o.score)]),
+      reasons: verdict.reasons.map((r) => r.text),
+    };
+  });
+  const sim = simulate(base);
   const random = {
     runs: sim.runs,
     wins: sim.wins,
@@ -43,8 +46,8 @@ function takeSnapshot(quiz: Quiz): Snapshot {
   return { profiles, random };
 }
 
-export function writeBaseline(quiz: Quiz): void {
-  const { profiles, random } = takeSnapshot(quiz);
+export function writeBaseline(base: KnowledgeBase): void {
+  const { profiles, random } = takeSnapshot(base);
   const lines = [
     '{',
     '  "profiles": [',
@@ -57,12 +60,12 @@ export function writeBaseline(quiz: Quiz): void {
 }
 
 /** Сравнивает результаты с эталоном. Возвращает список расхождений. */
-export function compareWithBaseline(quiz: Quiz): string[] {
+export function compareWithBaseline(base: KnowledgeBase): string[] {
   const expected = JSON.parse(readFileSync(FILE, 'utf8')) as Snapshot;
-  const actual = takeSnapshot(quiz);
+  const actual = takeSnapshot(base);
   const problems: string[] = [];
   if (actual.profiles.length !== expected.profiles.length) {
-    problems.push(`персон ${actual.profiles.length}, в эталоне ${expected.profiles.length}`);
+    problems.push(`профилей ${actual.profiles.length}, в эталоне ${expected.profiles.length}`);
   }
   expected.profiles.forEach((profile, index) => {
     if (JSON.stringify(profile) !== JSON.stringify(actual.profiles[index])) {

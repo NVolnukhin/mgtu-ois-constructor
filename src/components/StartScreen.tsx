@@ -28,9 +28,9 @@ export function StartScreen({ answered, onStart, onResume, onOpenKnowledgeBase }
           <p className="start__lead">{quiz.description}</p>
           <ul className="facts" aria-label="Коротко о тесте">
             <li>{plural(steps.length, ['вопрос', 'вопроса', 'вопросов'])}</li>
-            <li>≈ {plural(quiz.estimatedMinutes, ['минута', 'минуты', 'минут'])}</li>
+            <li>≈ {plural(Math.max(1, Math.round(steps.length * 0.3)), ['минута', 'минуты', 'минут'])}</li>
             <li>{plural(quiz.objects.length, ['вид деятельности', 'вида деятельности', 'видов деятельности'])}</li>
-            <li>{plural(quiz.directions.length, ['направление', 'направления', 'направлений'])}</li>
+            <li>{plural(quiz.groups.length, ['направление', 'направления', 'направлений'])}</li>
           </ul>
           <div className="actions">
             {hasProgress ? (
@@ -54,17 +54,17 @@ export function StartScreen({ answered, onStart, onResume, onOpenKnowledgeBase }
             </p>
           )}
         </div>
-        <Photo name={quiz.image} className="start__photo" eager />
+        <Photo image={quiz.image} className="start__photo" eager />
       </section>
 
       <section className="section">
         <h2 className="section__title">Направления</h2>
         <ul className="direction-grid">
-          {quiz.directions.map((direction) => (
-            <li key={direction.id} className="direction-card">
-              <Photo name={direction.image} className="direction-card__photo" />
-              <h3 className="direction-card__title">{direction.title}</h3>
-              <p className="direction-card__text">{direction.tagline}</p>
+          {quiz.groups.map((group) => (
+            <li key={group.id} className="direction-card">
+              <Photo image={group.image} className="direction-card__photo" />
+              <h3 className="direction-card__title">{group.title}</h3>
+              <p className="direction-card__text">{group.tagline}</p>
             </li>
           ))}
         </ul>

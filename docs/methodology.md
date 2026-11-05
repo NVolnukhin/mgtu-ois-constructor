@@ -6,12 +6,12 @@
 
 | Компонент | Где лежит |
 |---|---|
-| База знаний: атрибуты, объекты, вопросы-параметры, 82 правила «параметр + атрибут» и «параметр + параметр» | [`content/quiz.json`](../content/quiz.json), описание — [knowledge-base.md](knowledge-base.md) |
+| База знаний: атрибуты, объекты, вопросы-параметры, 82 правила «параметр + атрибут» и «параметр + параметр» | [`content/example.json`](../content/example.json), описание — [knowledge-base.md](knowledge-base.md) |
 | Рабочая база данных: параметры текущего сеанса | браузер (localStorage), просмотр — экран «Рабочая БД» |
 | Механизм логического вывода | [`src/engine/scoring.ts`](../src/engine/scoring.ts): `infer`, `buildProfile`, `rankObjects`, `evaluate` |
 | Подсистема объяснений | там же: `explain` и вклад атрибутов в совпадение |
 | Интерфейс пользователя и просмотр базы знаний | [`src/App.tsx`](../src/App.tsx), [`src/components/`](../src/components) |
-| Проверка базы знаний | [`scripts/check-quiz.ts`](../scripts/check-quiz.ts), результаты — [validation.md](validation.md) |
+| Проверка базы знаний | [`scripts/check-example.ts`](../scripts/check-example.ts), результаты — [validation.md](validation.md) |
 
 ## База знаний
 

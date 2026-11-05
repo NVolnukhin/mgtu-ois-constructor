@@ -1,9 +1,8 @@
 import { useEffect, useMemo, useRef } from 'react';
-import { breakdown, SPHERE_WEIGHT } from '../engine/scoring.ts';
+import { attributeLabel, breakdown } from '../engine/scoring.ts';
 import type { Evaluation, ObjectScore } from '../engine/scoring.ts';
-import { ATTRIBUTE_IDS } from '../engine/types.ts';
 import type { Answers } from '../engine/types.ts';
-import { attributeById, attributeRuleOf, directionById, percent, preferencePercent, quiz } from '../data.ts';
+import { attributeById, attributeRuleOf, groupById, percent, preferencePercent, quiz } from '../data.ts';
 import { Photo } from './Photo.tsx';
 import { RankingList } from './RankingList.tsx';
 
@@ -15,8 +14,9 @@ interface ResultScreenProps {
 }
 
 export function ResultScreen({ evaluation, answers, onRestart, onOpenWorkingMemory }: ResultScreenProps) {
-  const { winner, runnerUp, ranking, isClose, isWeak, reasons, objects } = evaluation;
-  const { direction } = winner;
+  const { objects } = evaluation;
+  const { winner, runnerUp, ranking, isClose, isWeak, reasons } = evaluation.verdict!;
+  const { group } = winner;
   const titleRef = useRef<HTMLHeadingElement>(null);
   const rows = useMemo(() => breakdown(quiz, answers), [answers]);
 
@@ -30,9 +30,9 @@ export function ResultScreen({ evaluation, answers, onRestart, onOpenWorkingMemo
         <div className="result__intro">
           <p className="eyebrow">Твоя направленность</p>
           <h1 ref={titleRef} tabIndex={-1} className="result__title">
-            {direction.title}
+            {group.title}
           </h1>
-          <p className="result__tagline">{direction.tagline}</p>
+          <p className="result__tagline">{group.tagline}</p>
 
           <div className="score">
             <p className="score__value">
@@ -50,14 +50,14 @@ export function ResultScreen({ evaluation, answers, onRestart, onOpenWorkingMemo
               направления на разовых акциях — так станет понятнее, что откликается именно тебе.
             </p>
           )}
-          {isClose && (
+          {isClose && runnerUp && (
             <p className="callout">
-              Почти так же тебе подходит направление «{runnerUp.direction.title}» — {Math.round(runnerUp.percent)} %.
+              Почти так же тебе подходит направление «{runnerUp.group.title}» — {Math.round(runnerUp.percent)} %.
               Можно попробовать оба и выбрать по ощущениям.
             </p>
           )}
         </div>
-        <Photo name={direction.image} className="result__photo" eager />
+        <Photo image={group.image} className="result__photo" eager />
       </header>
 
       <section className="section">
@@ -99,10 +99,10 @@ export function ResultScreen({ evaluation, answers, onRestart, onOpenWorkingMemo
 
           <section className="section">
             <h2 className="section__title">О направлении</h2>
-            <p className="result__text">{direction.description}</p>
+            <p className="result__text">{group.description}</p>
             <h3 className="result__subtitle">Что пригодится</h3>
             <ul className="chips">
-              {direction.qualities.map((quality) => (
+              {group.qualities?.map((quality) => (
                 <li key={quality}>{quality}</li>
               ))}
             </ul>
@@ -111,7 +111,7 @@ export function ResultScreen({ evaluation, answers, onRestart, onOpenWorkingMemo
           <section className="section">
             <h2 className="section__title">С чего начать</h2>
             <ol className="steps">
-              {direction.firstSteps.map((text) => (
+              {group.firstSteps?.map((text) => (
                 <li key={text}>{text}</li>
               ))}
             </ol>
@@ -123,8 +123,8 @@ export function ResultScreen({ evaluation, answers, onRestart, onOpenWorkingMemo
             <h2 className="section__title">Все направления</h2>
             <ul className="bars">
               {ranking.map((score) => (
-                <li key={score.direction.id} className={score === winner ? 'bar bar--winner' : 'bar'}>
-                  <span className="bar__label">{score.direction.title}</span>
+                <li key={score.group.id} className={score === winner ? 'bar bar--winner' : 'bar'}>
+                  <span className="bar__label">{score.group.title}</span>
                   <span className="bar__track" aria-hidden="true">
                     <span className="bar__fill" style={{ width: `${score.percent}%` }} />
                   </span>
@@ -145,7 +145,7 @@ export function ResultScreen({ evaluation, answers, onRestart, onOpenWorkingMemo
                 </p>
                 <p>
                   Профиль сравнивается с атрибутами каждого из {quiz.objects.length} видов деятельности (косинусная мера
-                  сходства, сферы с весом {SPHERE_WEIGHT}) и переводится в совпадение от 0 до 100 %: 50 % — деятельность
+                  сходства с учётом важности атрибутов) и переводится в совпадение от 0 до 100 %: 50 % — деятельность
                   не связана с ответами. Так получается рейтинг. Направленность — это сфера, по которой набрано больше
                   всего баллов из {winner.max} возможных.
                 </p>
@@ -155,7 +155,7 @@ export function ResultScreen({ evaluation, answers, onRestart, onOpenWorkingMemo
               </button>
               <ol className="breakdown">
                 {rows.map(({ question, selected, points, rule }, i) => {
-                  const gained = ATTRIBUTE_IDS.filter((id) => points[id] !== 0);
+                  const gained = quiz.attributes.map((a) => a.id).filter((id) => points[id] !== 0);
                   const fired = selected.flatMap((option) => attributeRuleOf(question.id, option.id)?.title ?? []);
                   return (
                     <li key={question.id} className="breakdown__item">
@@ -175,9 +175,9 @@ export function ResultScreen({ evaluation, answers, onRestart, onOpenWorkingMemo
                           ? gained.map((id) => (
                               <span
                                 key={id}
-                                className={id === direction.id ? 'point point--winner' : points[id] < 0 ? 'point point--minus' : 'point'}
+                                className={id === group.attribute ? 'point point--winner' : points[id] < 0 ? 'point point--minus' : 'point'}
                               >
-                                {attributeById[id].short} {points[id] > 0 ? '+' : '−'}
+                                {attributeLabel(attributeById[id])} {points[id] > 0 ? '+' : '−'}
                                 {Math.abs(points[id])}
                               </span>
                             ))
@@ -215,14 +215,14 @@ function TopCard({ item }: { item: ObjectScore }) {
         <span className="top-card__score">{percent(item.score)}</span>
       </div>
       <h3 className="top-card__title">{item.object.title}</h3>
-      <p className="top-card__direction">{directionById[item.object.direction].title}</p>
+      {item.object.group && <p className="top-card__direction">{groupById[item.object.group]?.title}</p>}
       <p className="top-card__text">{item.object.description}</p>
       {matches.length > 0 && (
         <p className="top-card__line">
           <span className="top-card__label">Совпадает:</span>
           {matches.map((c) => (
             <span key={c.attribute} className="point point--plus">
-              {attributeById[c.attribute].short} {preferencePercent(c.preference)}
+              {attributeLabel(attributeById[c.attribute])} {preferencePercent(c.preference)}
             </span>
           ))}
         </p>
@@ -232,7 +232,7 @@ function TopCard({ item }: { item: ObjectScore }) {
           <span className="top-card__label">Не совпадает:</span>
           {conflicts.map((c) => (
             <span key={c.attribute} className="point point--minus">
-              {attributeById[c.attribute].short} {preferencePercent(c.preference)}
+              {attributeLabel(attributeById[c.attribute])} {preferencePercent(c.preference)}
             </span>
           ))}
         </p>

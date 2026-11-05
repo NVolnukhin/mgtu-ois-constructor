@@ -1,8 +1,9 @@
 import { useEffect, useRef } from 'react';
 import type { FormEvent } from 'react';
 import type { ObjectScore } from '../engine/scoring.ts';
+import { isSafeImageUrl } from '../engine/images.ts';
 import type { Option, Question, Rule } from '../engine/types.ts';
-import { image, quiz, steps } from '../data.ts';
+import { quiz, steps } from '../data.ts';
 import type { Step } from '../data.ts';
 import { LiveRanking } from './LiveRanking.tsx';
 import { Photo } from './Photo.tsx';
@@ -43,8 +44,8 @@ export function QuestionScreen(props: QuestionScreenProps) {
   // и заранее грузим картинку следующего вопроса.
   useEffect(() => {
     titleRef.current?.focus({ preventScroll: true });
-    const next = steps[index + 1];
-    if (next) new Image().src = image(next.question.image).src;
+    const next = steps[index + 1]?.question.image?.url;
+    if (next && isSafeImageUrl(next)) new Image().src = next;
   }, [index]);
 
   function submit(event: FormEvent) {
@@ -55,7 +56,7 @@ export function QuestionScreen(props: QuestionScreenProps) {
   return (
     <form className="question" onSubmit={submit}>
       <div className="question__aside">
-        <Photo name={question.image} className="question__photo" eager />
+        <Photo image={question.image} className="question__photo" eager />
         <LiveRanking ranking={ranking} previous={previousRanking} hasData={hasData} />
       </div>
 
@@ -119,7 +120,7 @@ export function QuestionScreen(props: QuestionScreenProps) {
                     onChange={() => props.onToggle(option.id)}
                   />
                   <span className={`option__mark option__mark--${inputType}`} aria-hidden="true" />
-                  {option.image && <Photo name={option.image} className="option__thumb" eager decorative />}
+                  <Photo image={option.image} className="option__thumb" eager decorative />
                   <span className="option__text">{option.text}</span>
                 </label>
               );

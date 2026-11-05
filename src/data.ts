@@ -1,13 +1,11 @@
 // База знаний для приложения. Структуру JSON проверяет npm run check, поэтому здесь только приведение типов.
 
-import quizJson from '../content/quiz.json';
-import imagesJson from '../content/images.json';
+import exampleJson from '../content/example.json';
 import { attributeRules } from './engine/scoring.ts';
 import type { AttributeRule } from './engine/scoring.ts';
-import type { Attribute, AttributeId, Block, Direction, DirectionId, ImageInfo, Images, Question, Quiz } from './engine/types.ts';
+import type { Attribute, Block, Group, KnowledgeBase, Question } from './engine/types.ts';
 
-export const quiz = quizJson as unknown as Quiz;
-export const images = imagesJson as Images;
+export const quiz = exampleJson as unknown as KnowledgeBase;
 
 /** Вопрос вместе с блоком — в том порядке, в каком они идут в базе знаний. */
 export interface Step {
@@ -33,13 +31,8 @@ export function attributeRuleOf(questionId: string, optionId: string): Attribute
 /** Всего правил в базе знаний: «параметр + атрибут» и «параметр + параметр». */
 export const ruleCount = attributeRuleList.length + quiz.rules.length;
 
-export const attributeById = Object.fromEntries(quiz.attributes.map((a) => [a.id, a])) as Record<AttributeId, Attribute>;
-export const directionById = Object.fromEntries(quiz.directions.map((d) => [d.id, d])) as Record<DirectionId, Direction>;
-
-export function image(key: string): ImageInfo & { src: string } {
-  const info = images[key];
-  return { ...info, src: `${import.meta.env.BASE_URL}${info.file}` };
-}
+export const attributeById: Record<string, Attribute> = Object.fromEntries(quiz.attributes.map((a) => [a.id, a]));
+export const groupById: Record<string, Group> = Object.fromEntries(quiz.groups.map((g) => [g.id, g]));
 
 /** Доля от 0 до 1 в процентах: 0,724 → «72 %». */
 export function percent(value: number): string {
