@@ -1,7 +1,31 @@
-// Тесты движка на придуманных базах: то, чего в примере нет, но что конструктор обещает.
-// Запускаются из npm run check.
+// Тесты на придуманных базах: то, чего в примере нет, но что конструктор обещает.
+// Движок, разбор чужих файлов, операции редактора. Запускаются из npm run check.
 
 import { deepStrictEqual, strictEqual } from 'node:assert';
+import { readFileSync } from 'node:fs';
+import {
+  addAttribute,
+  addBlock,
+  addGroup,
+  addObject,
+  addProfile,
+  addQuestion,
+  addRule,
+  copyOf,
+  emptyBase,
+  moveItem,
+  moveQuestion,
+  newOption,
+  removeAttribute,
+  removeBlock,
+  removeGroup,
+  removeObject,
+  removeOption,
+  removeQuestion,
+  setPhrase,
+  setQuestionType,
+  setWeight,
+} from '../src/editor/ops.ts';
 import { parseBase, parseBaseText } from '../src/engine/parse.ts';
 import { askedQuestions, evaluate, infer, isComplete, liveRanking } from '../src/engine/scoring.ts';
 import type { KnowledgeBase, Question } from '../src/engine/types.ts';
@@ -44,6 +68,19 @@ function smallBase(): KnowledgeBase {
     rules: [],
     testProfiles: [],
   };
+}
+
+/** База проходит импорт: повторов id и ссылок в никуда нет, файл разбирается без потерь. */
+function assertImportable(base: KnowledgeBase, why: string): void {
+  const parsed = parseForImport(JSON.stringify(base));
+  strictEqual(parsed.ok, true, `${why}: ${parsed.ok ? '' : parsed.errors.join('; ')}`);
+  if (parsed.ok) deepStrictEqual(parsed.base, JSON.parse(JSON.stringify(base)), why);
+}
+
+function loadExampleCopy(): KnowledgeBase {
+  const parsed = parseBase(JSON.parse(readFileSync(new URL('../content/example.json', import.meta.url), 'utf8')));
+  if (!parsed.ok) throw new Error('пример не разобран');
+  return copyOf(parsed.base);
 }
 
 const CASES: Record<string, () => void> = {
@@ -251,6 +288,125 @@ const CASES: Record<string, () => void> = {
     strictEqual(imported((b) => (b.title = '')), true, 'пустое название можно исправить в редакторе');
     strictEqual(imported((b) => (b.objects = [])), true, 'черновик без объектов тоже можно импортировать');
     strictEqual(imported((b) => (b.objects[0].values = { x: 9 })), true, 'значение вне шкалы можно исправить в редакторе');
+  },
+
+  'редактор: новая база собирается с нуля, id не повторяются'() {
+    const base = emptyBase();
+    strictEqual(hasErrors(validateBase(base)), true, 'пустая база — черновик с ошибками');
+    assertImportable(base, 'пустая база');
+    const x = addAttribute(base, 'Икс');
+    const y = addAttribute(base, 'Игрек');
+    strictEqual(x.id === y.id, false);
+    const group = addGroup(base);
+    strictEqual(group.attribute, x.id, 'группа берёт первый свободный атрибут');
+    addGroup(base);
+    const third = addGroup(base);
+    strictEqual(base.attributes.length, 3, 'свободных атрибутов нет — создаётся новый');
+    strictEqual(third.attribute, base.attributes[2].id);
+    const object = addObject(base);
+    object.title = 'Объект';
+    object.values[x.id] = 3;
+    const blockId = base.blocks[0].id;
+    const first = addQuestion(base, blockId);
+    const second = addQuestion(base, blockId);
+    strictEqual(first.id === second.id, false);
+    for (const [index, question] of [first, second].entries()) {
+      question.text = `Вопрос ${index + 1}`;
+      question.parameter = `Параметр ${index + 1}`;
+      question.options[0].text = 'Да';
+      question.options[1].text = 'Нет';
+    }
+    setWeight(first.options[0], x.id, 2);
+    setWeight(first.options[1], x.id, 0);
+    deepStrictEqual(first.options[1].weights, {}, 'нулевые веса не хранятся');
+    const rule = addRule(base);
+    strictEqual(rule?.title, 'П1');
+    strictEqual(rule?.if[0].question, first.id);
+    strictEqual(rule?.then.question, second.id);
+    strictEqual(addRule(base)?.title, 'П2');
+    assertImportable(base, 'собранная база');
+    strictEqual(validateBase(base).some((issue) => issue.severity === 'error' && issue.section === 'rules'), false, 'новое правило сразу правильное');
+  },
+
+  'редактор: варианты получают свободные буквы, тип вопроса чистит лишнее'() {
+    const base = smallBase();
+    const question = base.blocks[0].questions[0];
+    strictEqual(newOption(question).id, 'c');
+    removeOption(base, question.id, 'a');
+    strictEqual(newOption(question).id, 'a');
+    question.options[0].exclusive = true;
+    question.reasonTemplate = { g: 'Шаблон: {options}' };
+    setQuestionType(question, 'multiple');
+    strictEqual(question.options[0].exclusive, true);
+    setQuestionType(question, 'single');
+    strictEqual('exclusive' in question.options[0], false);
+    strictEqual('reasonTemplate' in question, false);
+    const option = question.options[0];
+    setPhrase(option, 'reasons', 'g', 'Причина');
+    deepStrictEqual(option.reasons, { g: 'Причина' });
+    setPhrase(option, 'reasons', 'g', '');
+    strictEqual('reasons' in option, false, 'опустевший словарь не остаётся');
+  },
+
+  'редактор: удаление не оставляет ссылок в никуда'() {
+    const check = (why: string, change: (base: KnowledgeBase) => void) => {
+      const base = loadExampleCopy();
+      change(base);
+      assertImportable(base, why);
+      strictEqual(validateBase(base).some((issue) => issue.integrity), false, why);
+    };
+    check('атрибут со связанной группой', (base) => removeAttribute(base, 'children'));
+    check('атрибут стиля', (base) => removeAttribute(base, 'physical'));
+    check('группа', (base) => removeGroup(base, 'ecology'));
+    check('объект', (base) => removeObject(base, 'mentor'));
+    check('вопрос-условие правила', (base) => removeQuestion(base, 'general-time'));
+    check('вопрос, который выводит правило', (base) => removeQuestion(base, 'children-commitment'));
+    check('вариант-условие правила', (base) => removeOption(base, 'general-time', 'c'));
+    check('вариант, который выводит правило', (base) => removeOption(base, 'children-commitment', 'd'));
+    check('блок', (base) => removeBlock(base, 'children'));
+    check('все блоки', (base) => [...base.blocks].forEach((block) => removeBlock(base, block.id)));
+    check('все атрибуты', (base) => [...base.attributes].forEach((attribute) => removeAttribute(base, attribute.id)));
+    check('все группы', (base) => [...base.groups].forEach((group) => removeGroup(base, group.id)));
+
+    const base = loadExampleCopy();
+    removeQuestion(base, 'general-time');
+    strictEqual(base.rules.some((rule) => rule.title === 'П2'), false, 'правило без условия удаляется целиком');
+    strictEqual(base.rules.some((rule) => rule.title === 'П1'), true, 'остальные правила остаются');
+    strictEqual(base.testProfiles.some((profile) => 'general-time' in profile.answers), false, 'ответы профилей чистятся');
+  },
+
+  'редактор: копия примера независима и даёт те же результаты'() {
+    const original = loadExampleCopy();
+    const copy = copyOf(original);
+    copy.attributes[0].importance = 5;
+    strictEqual(original.attributes[0].importance, 2);
+    strictEqual(copy.title.endsWith('(копия)'), true);
+    const answers = original.testProfiles[0].answers;
+    deepStrictEqual(evaluate(copyOf(original), answers).objects.map((item) => item.score), evaluate(original, answers).objects.map((item) => item.score));
+  },
+
+  'редактор: порядок и профили'() {
+    const base = smallBase();
+    addBlock(base);
+    const [first] = base.blocks[0].questions;
+    moveQuestion(base, first.id, -1);
+    strictEqual(base.blocks[0].questions[0].id, first.id, 'первый вопрос первого блока выше не уходит');
+    moveQuestion(base, first.id, 1);
+    strictEqual(base.blocks[0].questions[1].id, first.id);
+    const last = base.blocks[0].questions[3];
+    moveQuestion(base, last.id, 1);
+    strictEqual(base.blocks[1].questions[0].id, last.id, 'с края блока вопрос уходит в соседний');
+    moveQuestion(base, last.id, -1);
+    strictEqual(base.blocks[0].questions[3].id, last.id, 'и возвращается обратно');
+    const list = [1, 2, 3];
+    moveItem(list, 0, -1);
+    moveItem(list, 2, 1);
+    deepStrictEqual(list, [1, 2, 3], 'за границы списка не выходит');
+    moveItem(list, 0, 1);
+    deepStrictEqual(list, [2, 1, 3]);
+    strictEqual(addProfile(base).name, 'Профиль 1');
+    strictEqual(addProfile(base).name, 'Профиль 2');
+    assertImportable(base, 'база с профилями');
   },
 
   'разбор файла: лишние поля отбрасываются, картинка без адреса считается пустой'() {

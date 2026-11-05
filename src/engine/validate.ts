@@ -318,6 +318,9 @@ export function checkRequirements(base: KnowledgeBase): RequirementRow[] {
       actual: `${shown} лучших + весь рейтинг по кнопке`,
       ok: shown >= REQUIREMENTS.top,
     },
+    // Эти два обеспечивает сам конструктор, какой бы ни была база.
+    { title: 'В конце — все объекты по рангу', need: 'да', actual: 'экран результата', ok: true },
+    { title: 'База знаний и рабочая БД с просмотром', need: 'да', actual: 'экраны «База знаний» и «Рабочая БД»', ok: true },
   ];
 }
 

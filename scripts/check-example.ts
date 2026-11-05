@@ -125,7 +125,7 @@ if (caseFailures.length > 0) {
   console.log(`\n✗ Тесты движка (${caseFailures.length}):`);
   for (const problem of caseFailures) console.log(`  – ${problem}`);
 } else {
-  console.log('Тесты движка пройдены: правила через И, цепочки вывода, база без групп, разбор чужих файлов.');
+  console.log('Тесты движка пройдены: правила через И, цепочки вывода, база без групп, разбор чужих файлов, операции редактора.');
 }
 
 console.log(failed ? '\nПроверка не пройдена.' : '\nВсё в порядке.');

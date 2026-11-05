@@ -1,9 +1,11 @@
 import { useEffect, useMemo, useRef } from 'react';
 import { groupsTitle, percent, preferencePercent, useBase } from '../base.ts';
-import { attributeLabel, breakdown } from '../engine/scoring.ts';
+import { addProfile } from '../editor/ops.ts';
+import { askedQuestions, attributeLabel, breakdown } from '../engine/scoring.ts';
 import type { Evaluation, ObjectScore } from '../engine/scoring.ts';
 import type { Answers } from '../engine/types.ts';
-import { basePath } from '../router.ts';
+import { basePath, navigate } from '../router.ts';
+import { updateBase } from '../storage.ts';
 import { Photo } from './Photo.tsx';
 import { RankingList } from './RankingList.tsx';
 
@@ -15,7 +17,7 @@ interface ResultScreenProps {
 
 export function ResultScreen({ evaluation, answers, onRestart }: ResultScreenProps) {
   const compiled = useBase();
-  const { id, base, attributeById, attributeRuleOf } = compiled;
+  const { id, base, builtIn, attributeById, attributeRuleOf } = compiled;
   const { verdict, objects } = evaluation;
   const titleRef = useRef<HTMLHeadingElement>(null);
   const rows = useMemo(() => breakdown(base, answers), [base, answers]);
@@ -26,6 +28,19 @@ export function ResultScreen({ evaluation, answers, onRestart }: ResultScreenPro
   useEffect(() => {
     titleRef.current?.focus({ preventScroll: true });
   }, []);
+
+  /** Сохраняет эти ответы как тестовый профиль: сегодняшний результат становится ожиданием на будущее. */
+  function saveAsProfile() {
+    const asked = askedQuestions(base, answers);
+    updateBase(id, (draft) =>
+      void addProfile(draft, {
+        answers: Object.fromEntries(asked.map((question) => [question.id, answers[question.id] ?? []])),
+        expectTop: [leader.object.id],
+        ...(verdict && { expectGroup: [verdict.winner.group.id], expectClose: verdict.isClose, expectWeak: verdict.isWeak }),
+      }),
+    );
+    navigate(basePath(id, 'checks'));
+  }
 
   return (
     <article className="result">
@@ -214,6 +229,11 @@ export function ResultScreen({ evaluation, answers, onRestart }: ResultScreenPro
         <button type="button" className="btn btn--secondary" onClick={onRestart}>
           Пройти заново
         </button>
+        {!builtIn && (
+          <button type="button" className="btn btn--ghost" onClick={saveAsProfile}>
+            Сохранить как тестовый профиль
+          </button>
+        )}
       </div>
     </article>
   );

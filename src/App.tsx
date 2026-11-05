@@ -1,12 +1,12 @@
 import { useEffect, useMemo } from 'react';
 import { BaseContext, compileBase, testPath } from './base.ts';
-import type { CompiledBase } from './base.ts';
 import { BaseLayout } from './components/BaseLayout.tsx';
+import { ChecksScreen } from './components/ChecksScreen.tsx';
 import { ErrorBoundary } from './components/ErrorBoundary.tsx';
 import { HomeScreen } from './components/HomeScreen.tsx';
 import { SessionScreens } from './components/SessionScreens.tsx';
 import { EditorScreen } from './editor/EditorScreen.tsx';
-import { basePath, HOME_PATH, useRoute } from './router.ts';
+import { HOME_PATH, useRoute } from './router.ts';
 import type { BaseSection } from './router.ts';
 import { exampleRecord, EXAMPLE_ID, loadSession, useStore } from './storage.ts';
 import type { StorageProblem } from './storage.ts';
@@ -94,7 +94,7 @@ function BaseRoute({ id, section, tab }: BaseRouteProps) {
         <SessionScreens key={record.updatedAt} section={section} />
       ) : (
         <BaseLayout section={section} returnPath={testPath(compiled, loadSession(compiled.id)?.answers)}>
-          {section === 'edit' ? <EditorScreen tab={tab} /> : <ChecksPlaceholder compiled={compiled} />}
+          {section === 'edit' ? <EditorScreen tab={tab} /> : <ChecksScreen />}
         </BaseLayout>
       )}
     </BaseContext.Provider>
@@ -103,16 +103,6 @@ function BaseRoute({ id, section, tab }: BaseRouteProps) {
 
 function isSessionSection(section: BaseSection): boolean {
   return section !== 'edit' && section !== 'checks';
-}
-
-/** Проверка появится на следующем шаге. */
-function ChecksPlaceholder({ compiled }: { compiled: CompiledBase }) {
-  return (
-    <>
-      <p>Этот экран появится на следующем шаге.</p>
-      <a href={basePath(compiled.id)}>К тесту</a>
-    </>
-  );
 }
 
 function BaseNotFound() {

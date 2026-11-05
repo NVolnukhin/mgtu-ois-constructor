@@ -13,30 +13,20 @@ import { ObjectsSection } from './ObjectsSection.tsx';
 import { copyOf } from './ops.ts';
 import { QuestionsSection } from './QuestionsSection.tsx';
 import { RulesSection } from './RulesSection.tsx';
+import { EDITOR_SECTIONS } from './sections.ts';
 import { SettingsSection } from './SettingsSection.tsx';
 
 /** Как разделы редактора меняют базу: правят черновик, а он сразу сохраняется. */
 export type UpdateBase = (change: (draft: KnowledgeBase) => void) => void;
-
-const SECTIONS: { id: IssueSection; title: string }[] = [
-  { id: 'general', title: 'Основное' },
-  { id: 'attributes', title: 'Атрибуты' },
-  { id: 'groups', title: 'Группы' },
-  { id: 'objects', title: 'Объекты' },
-  { id: 'questions', title: 'Вопросы' },
-  { id: 'rules', title: 'Правила' },
-  { id: 'settings', title: 'Настройки' },
-];
 
 /** Редактор базы. Рассчитан на компьютер, на телефоне работает с прокруткой. */
 export function EditorScreen({ tab }: { tab?: string }) {
   const { id, base, issues, builtIn, canRun, steps } = useBase();
   const titleRef = useRef<HTMLHeadingElement>(null);
   const update: UpdateBase = useCallback((change) => updateBase(id, change), [id]);
-  const section = SECTIONS.find((item) => item.id === tab)?.id ?? 'general';
+  const section = EDITOR_SECTIONS.find((item) => item.id === tab)?.id ?? 'general';
   const errors = issues.filter((issue) => issue.severity === 'error').length;
-  const sectionIndex = SECTIONS.findIndex((item) => item.id === section);
-  const next = SECTIONS[sectionIndex + 1];
+  const next = EDITOR_SECTIONS[EDITOR_SECTIONS.findIndex((item) => item.id === section) + 1];
 
   const counts = useMemo<Partial<Record<IssueSection, number>>>(
     () => ({
@@ -101,7 +91,7 @@ export function EditorScreen({ tab }: { tab?: string }) {
 
       <div className="editor__layout">
         <nav className="editor__nav" aria-label="Разделы редактора">
-          {SECTIONS.map((item) => {
+          {EDITOR_SECTIONS.map((item) => {
             const failed = issues.some((issue) => issue.section === item.id && issue.severity === 'error');
             const count = counts[item.id];
             return (
