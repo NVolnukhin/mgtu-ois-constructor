@@ -1,8 +1,8 @@
 // Обмен базами: экспорт и импорт файлом JSON.
 
-import { parseBaseText } from './engine/parse.ts';
 import type { ParseResult } from './engine/parse.ts';
 import type { KnowledgeBase } from './engine/types.ts';
+import { parseForImport } from './engine/validate.ts';
 
 /** Больше в localStorage всё равно не поместится. */
 const MAX_FILE_BYTES = 5 * 1024 * 1024;
@@ -32,5 +32,5 @@ export async function readBaseFile(file: File): Promise<ParseResult> {
     const size = (file.size / 1024 / 1024).toFixed(1).replace('.', ',');
     return { ok: false, errors: [`Файл слишком большой: ${size} МБ. В браузере на все базы есть около 5 МБ.`] };
   }
-  return parseBaseText(await file.text());
+  return parseForImport(await file.text());
 }

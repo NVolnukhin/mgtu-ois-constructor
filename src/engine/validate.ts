@@ -2,6 +2,8 @@
 // Чистые функции: их используют и экран «Проверка» в браузере, и npm run check.
 
 import { baseImages, isSafeImagePosition, isSafeImageUrl, isSafeLinkUrl } from './images.ts';
+import { parseBaseText } from './parse.ts';
+import type { ParseResult } from './parse.ts';
 import { allQuestions, askedQuestions, evaluate, infer, maxScores, questionBounds, selectedOptions, weight } from './scoring.ts';
 import type { Evaluation } from './scoring.ts';
 import type { KnowledgeBase, Question, TestProfile } from './types.ts';
@@ -16,6 +18,8 @@ export interface Issue {
   message: string;
   /** id сущности, к которой относится проблема. */
   target?: string;
+  /** Повторяющийся id или ссылка в никуда: в редакторе такое не исправить, поэтому файл не импортируется. */
+  integrity?: boolean;
 }
 
 /** Допустимые веса варианта ответа. */
@@ -39,6 +43,7 @@ export function validateBase(base: KnowledgeBase): Issue[] {
   const issues: Issue[] = [];
   const error = (section: IssueSection, message: string, target?: string) => issues.push({ severity: 'error', section, message, target });
   const warning = (section: IssueSection, message: string, target?: string) => issues.push({ severity: 'warning', section, message, target });
+  const broken = (section: IssueSection, message: string, target?: string) => issues.push({ severity: 'error', section, message, target, integrity: true });
 
   const questions = allQuestions(base);
   const attributeIds = new Set(base.attributes.map((a) => a.id));
@@ -67,7 +72,7 @@ export function validateBase(base: KnowledgeBase): Issue[] {
 
   // Атрибуты
   if (base.attributes.length === 0) error('attributes', 'Нет ни одного атрибута: не с чем сравнивать объекты.');
-  for (const id of new Set(repeated(base.attributes.map((a) => a.id)))) error('attributes', `id атрибута «${id}» повторяется.`, id);
+  for (const id of new Set(repeated(base.attributes.map((a) => a.id)))) broken('attributes', `id атрибута «${id}» повторяется.`, id);
   for (const attribute of base.attributes) {
     const at = `Атрибут «${attribute.title || attribute.id}»`;
     if (!attribute.title.trim()) error('attributes', `Атрибут ${attribute.id}: нет названия.`, attribute.id);
@@ -81,7 +86,7 @@ export function validateBase(base: KnowledgeBase): Issue[] {
   }
 
   // Группы
-  for (const id of new Set(repeated(base.groups.map((g) => g.id)))) error('groups', `id группы «${id}» повторяется.`, id);
+  for (const id of new Set(repeated(base.groups.map((g) => g.id)))) broken('groups', `id группы «${id}» повторяется.`, id);
   if (base.groups.length === 1) warning('groups', 'Группа всего одна: итог всегда будет один и тот же.', base.groups[0].id);
   const max = maxScores(base);
   const linked = new Map<string, string>();
@@ -89,7 +94,7 @@ export function validateBase(base: KnowledgeBase): Issue[] {
     const at = `Группа «${group.title || group.id}»`;
     if (!group.title.trim()) error('groups', `Группа ${group.id}: нет названия.`, group.id);
     if (!attributeIds.has(group.attribute)) {
-      error('groups', `${at}: нет связанного атрибута, а итог группы — это доля его баллов.`, group.id);
+      broken('groups', `${at}: нет связанного атрибута, а итог группы — это доля его баллов.`, group.id);
       continue;
     }
     const other = linked.get(group.attribute);
@@ -112,14 +117,14 @@ export function validateBase(base: KnowledgeBase): Issue[] {
 
   // Объекты
   if (base.objects.length === 0) error('objects', 'Нет ни одного объекта: нечего ранжировать.');
-  for (const id of new Set(repeated(base.objects.map((o) => o.id)))) error('objects', `id объекта «${id}» повторяется.`, id);
+  for (const id of new Set(repeated(base.objects.map((o) => o.id)))) broken('objects', `id объекта «${id}» повторяется.`, id);
   for (const object of base.objects) {
     const at = `Объект «${object.title || object.id}»`;
     if (!object.title.trim()) error('objects', `Объект ${object.id}: нет названия.`, object.id);
-    if (object.group !== undefined && !groupIds.has(object.group)) error('objects', `${at}: нет группы «${object.group}».`, object.id);
+    if (object.group !== undefined && !groupIds.has(object.group)) broken('objects', `${at}: нет группы «${object.group}».`, object.id);
     for (const [id, value] of Object.entries(object.values)) {
       if (!attributeIds.has(id)) {
-        error('objects', `${at}: неизвестный атрибут «${id}».`, object.id);
+        broken('objects', `${at}: неизвестный атрибут «${id}».`, object.id);
       } else if (!Number.isInteger(value) || value < VALUE_RANGE.min || value > VALUE_RANGE.max) {
         error('objects', `${at}: значение атрибута «${id}» должно быть целым от ${VALUE_RANGE.min} до ${VALUE_RANGE.max}.`, object.id);
       }
@@ -135,14 +140,14 @@ export function validateBase(base: KnowledgeBase): Issue[] {
 
   // Блоки и вопросы
   if (questions.length === 0) error('questions', 'Нет ни одного вопроса.');
-  for (const id of new Set(repeated(base.blocks.map((b) => b.id)))) error('questions', `id блока «${id}» повторяется.`, id);
-  for (const id of new Set(repeated(questions.map((q) => q.id)))) error('questions', `id вопроса «${id}» повторяется.`, id);
+  for (const id of new Set(repeated(base.blocks.map((b) => b.id)))) broken('questions', `id блока «${id}» повторяется.`, id);
+  for (const id of new Set(repeated(questions.map((q) => q.id)))) broken('questions', `id вопроса «${id}» повторяется.`, id);
   const groupOf = (id: string | undefined) => base.groups.find((g) => g.id === id);
   base.blocks.forEach((block, blockIndex) => {
     const at = `Блок ${blockIndex + 1}${block.title ? ` «${block.title}»` : ''}`;
     if (base.blocks.length > 1 && !block.title.trim()) warning('questions', `${at}: нет названия.`, block.id);
     if (block.questions.length === 0) warning('questions', `${at}: в нём нет вопросов.`, block.id);
-    if (block.group !== undefined && !groupIds.has(block.group)) error('questions', `${at}: нет группы «${block.group}».`, block.id);
+    if (block.group !== undefined && !groupIds.has(block.group)) broken('questions', `${at}: нет группы «${block.group}».`, block.id);
     const own = groupOf(block.group);
     for (const question of block.questions) {
       if (own && !question.options.some((o) => weight(o, own.attribute) > 0)) {
@@ -162,10 +167,10 @@ export function validateBase(base: KnowledgeBase): Issue[] {
       else parameters.set(question.parameter, index + 1);
     }
     if (question.options.length < 2) error('questions', `${at}: нужно хотя бы два варианта ответа.`, question.id);
-    for (const id of new Set(repeated(question.options.map((o) => o.id)))) error('questions', `${at}: id варианта «${id}» повторяется.`, question.id);
+    for (const id of new Set(repeated(question.options.map((o) => o.id)))) broken('questions', `${at}: id варианта «${id}» повторяется.`, question.id);
 
     for (const [groupId, template] of Object.entries(question.reasonTemplate ?? {})) {
-      if (!groupIds.has(groupId)) error('questions', `${at}: в общем объяснении неизвестная группа «${groupId}».`, question.id);
+      if (!groupIds.has(groupId)) broken('questions', `${at}: в общем объяснении неизвестная группа «${groupId}».`, question.id);
       if (template && !template.includes('{options}')) warning('questions', `${at}: в общем объяснении нет {options}.`, question.id);
     }
     if (question.reasonTemplate && question.type !== 'multiple' && Object.keys(question.reasonTemplate).length > 0) {
@@ -177,14 +182,14 @@ export function validateBase(base: KnowledgeBase): Issue[] {
       if (!option.text.trim()) error('questions', `${opt}: нет текста.`, question.id);
       for (const [id, value] of Object.entries(option.weights)) {
         if (!attributeIds.has(id)) {
-          error('questions', `${opt}: вес неизвестного атрибута «${id}».`, question.id);
+          broken('questions', `${opt}: вес неизвестного атрибута «${id}».`, question.id);
         } else if (!Number.isInteger(value) || value < WEIGHT_RANGE.min || value > WEIGHT_RANGE.max) {
           error('questions', `${opt}: вес атрибута «${id}» должен быть целым от ${WEIGHT_RANGE.min} до ${WEIGHT_RANGE.max}.`, question.id);
         }
       }
       for (const [groupId, reason] of Object.entries(option.reasons ?? {})) {
         const group = groupOf(groupId);
-        if (!group) error('questions', `${opt}: объяснение для неизвестной группы «${groupId}».`, question.id);
+        if (!group) broken('questions', `${opt}: объяснение для неизвестной группы «${groupId}».`, question.id);
         else if (reason && !(weight(option, group.attribute) > 0)) warning('questions', `${opt}: объяснение для «${group.title}» не покажется, у варианта нет баллов этой группы.`, question.id);
       }
       if (option.exclusive && question.type !== 'multiple') warning('questions', `${opt}: «ничего из этого» работает только при нескольких ответах.`, question.id);
@@ -201,7 +206,7 @@ export function validateBase(base: KnowledgeBase): Issue[] {
   });
 
   // Правила «параметр + параметр»
-  for (const id of new Set(repeated(base.rules.map((r) => r.id)))) error('rules', `id правила «${id}» повторяется.`, id);
+  for (const id of new Set(repeated(base.rules.map((r) => r.id)))) broken('rules', `id правила «${id}» повторяется.`, id);
   const position = new Map(questions.map((q, i) => [q.id, i]));
   const questionById = new Map(questions.map((q) => [q.id, q]));
   for (const rule of base.rules) {
@@ -210,8 +215,8 @@ export function validateBase(base: KnowledgeBase): Issue[] {
     if (rule.if.length === 0) error('rules', `${at}: нет условий.`, rule.id);
     for (const part of [...rule.if, rule.then]) {
       const question = questionById.get(part.question);
-      if (!question) error('rules', `${at}: нет вопроса «${part.question}».`, rule.id);
-      else if (!question.options.some((o) => o.id === part.option)) error('rules', `${at}: у вопроса «${question.parameter}» нет варианта «${part.option}».`, rule.id);
+      if (!question) broken('rules', `${at}: нет вопроса «${part.question}».`, rule.id);
+      else if (!question.options.some((o) => o.id === part.option)) broken('rules', `${at}: у вопроса «${question.parameter}» нет варианта «${part.option}».`, rule.id);
     }
     const target = position.get(rule.then.question);
     if (target !== undefined && rule.if.some((c) => (position.get(c.question) ?? -1) >= target)) {
@@ -249,6 +254,19 @@ export function validateBase(base: KnowledgeBase): Issue[] {
 
 export function hasErrors(issues: Issue[]): boolean {
   return issues.some((issue) => issue.severity === 'error');
+}
+
+/**
+ * Разбор чужого файла при импорте: структура и целостность. Остальные ошибки файл не отклоняют:
+ * такая база откроется, и их можно будет исправить в редакторе.
+ */
+export function parseForImport(text: string): ParseResult {
+  const parsed = parseBaseText(text);
+  if (!parsed.ok) return parsed;
+  const errors = validateBase(parsed.base)
+    .filter((issue) => issue.integrity)
+    .map((issue) => issue.message);
+  return errors.length > 0 ? { ok: false, errors } : parsed;
 }
 
 // ---------- Требования ДЗ 2-1 ----------

@@ -5,7 +5,7 @@ import { deepStrictEqual, strictEqual } from 'node:assert';
 import { parseBase, parseBaseText } from '../src/engine/parse.ts';
 import { askedQuestions, evaluate, infer, isComplete, liveRanking } from '../src/engine/scoring.ts';
 import type { KnowledgeBase, Question } from '../src/engine/types.ts';
-import { checkRequirements, hasErrors, minAskedQuestions, runTestProfiles, validateBase } from '../src/engine/validate.ts';
+import { checkRequirements, hasErrors, minAskedQuestions, parseForImport, runTestProfiles, validateBase } from '../src/engine/validate.ts';
 
 function question(id: string, type: Question['type'] = 'single'): Question {
   return {
@@ -228,6 +228,29 @@ const CASES: Record<string, () => void> = {
     rejected((j) => (j.rules = [{ id: 'r', if: {}, then: { question: 'q2', option: 'a' } }]), 'условия не списком');
     rejected((j) => (j.settings = { topCount: 0 }), 'число лучших меньше 1');
     strictEqual(parseBase({ ...JSON.parse(JSON.stringify(smallBase())), objects: [{ id: 'o', values: { x: 1e999 } }] }).ok, false, 'бесконечность');
+  },
+
+  'импорт: повторы id и ссылки в никуда отклоняются, а исправимые ошибки — нет'() {
+    const imported = (mutate: (base: KnowledgeBase) => void) => {
+      const base = smallBase();
+      mutate(base);
+      return parseForImport(JSON.stringify(base)).ok;
+    };
+    strictEqual(imported(() => {}), true);
+    strictEqual(imported((b) => (b.attributes[1].id = 'x')), false, 'повторяется id атрибута');
+    strictEqual(imported((b) => (b.blocks[0].questions[1].id = 'q1')), false, 'повторяется id вопроса');
+    strictEqual(imported((b) => (b.blocks[0].questions[0].options[1].id = 'a')), false, 'повторяется id варианта');
+    strictEqual(imported((b) => (b.blocks[0].questions[0].options[0].weights = { опечатка: 3 })), false, 'вес неизвестного атрибута');
+    strictEqual(imported((b) => (b.objects[0].values = { опечатка: 3 })), false, 'значение неизвестного атрибута');
+    strictEqual(imported((b) => (b.objects[0].group = 'нет')), false, 'неизвестная группа');
+    strictEqual(
+      imported((b) => (b.rules = [{ id: 'r', title: 'П1', if: [{ question: 'нет', option: 'a' }], then: { question: 'q2', option: 'a' }, note: '' }])),
+      false,
+      'правило на несуществующий вопрос',
+    );
+    strictEqual(imported((b) => (b.title = '')), true, 'пустое название можно исправить в редакторе');
+    strictEqual(imported((b) => (b.objects = [])), true, 'черновик без объектов тоже можно импортировать');
+    strictEqual(imported((b) => (b.objects[0].values = { x: 9 })), true, 'значение вне шкалы можно исправить в редакторе');
   },
 
   'разбор файла: лишние поля отбрасываются, картинка без адреса считается пустой'() {

@@ -5,6 +5,7 @@ import { BaseLayout } from './components/BaseLayout.tsx';
 import { ErrorBoundary } from './components/ErrorBoundary.tsx';
 import { HomeScreen } from './components/HomeScreen.tsx';
 import { SessionScreens } from './components/SessionScreens.tsx';
+import { EditorScreen } from './editor/EditorScreen.tsx';
 import { basePath, HOME_PATH, useRoute } from './router.ts';
 import type { BaseSection } from './router.ts';
 import { exampleRecord, EXAMPLE_ID, loadSession, useStore } from './storage.ts';
@@ -89,7 +90,13 @@ function BaseRoute({ id, section, tab }: BaseRouteProps) {
   return (
     <BaseContext.Provider value={compiled}>
       {/* key: при любом изменении базы ход теста читается заново, номер вопроса приводится к допустимому. */}
-      {isSessionSection(section) ? <SessionScreens key={record.updatedAt} section={section} /> : <PlaceholderScreens compiled={compiled} section={section} tab={tab} />}
+      {isSessionSection(section) ? (
+        <SessionScreens key={record.updatedAt} section={section} />
+      ) : (
+        <BaseLayout section={section} returnPath={testPath(compiled, loadSession(compiled.id)?.answers)}>
+          {section === 'edit' ? <EditorScreen tab={tab} /> : <ChecksPlaceholder compiled={compiled} />}
+        </BaseLayout>
+      )}
     </BaseContext.Provider>
   );
 }
@@ -98,13 +105,13 @@ function isSessionSection(section: BaseSection): boolean {
   return section !== 'edit' && section !== 'checks';
 }
 
-/** Редактор и проверка появятся на следующих шагах. */
-function PlaceholderScreens({ compiled, section }: { compiled: CompiledBase; section: BaseSection; tab?: string }) {
+/** Проверка появится на следующем шаге. */
+function ChecksPlaceholder({ compiled }: { compiled: CompiledBase }) {
   return (
-    <BaseLayout section={section} returnPath={testPath(compiled, loadSession(compiled.id)?.answers)}>
-      <p>Этот экран появится на следующих шагах.</p>
+    <>
+      <p>Этот экран появится на следующем шаге.</p>
       <a href={basePath(compiled.id)}>К тесту</a>
-    </BaseLayout>
+    </>
   );
 }
 
