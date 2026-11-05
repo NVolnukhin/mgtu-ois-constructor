@@ -1,0 +1,31 @@
+{
+  "name": "mgtu-ois-constructor",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Конструктор экспертных систем на основе прототипа ДЗ 2-1 по ОИС",
+  "type": "module",
+  "engines": {
+    "node": ">=22.18"
+  },
+  "scripts": {
+    "check": "node scripts/check-quiz.ts",
+    "docs": "node scripts/build-docs.ts",
+    "typecheck": "tsc -b",
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "preview": "vite preview"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.2",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@vitejs/plugin-react": "^6.1.1",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.1"
+  },
+  "dependencies": {
+    "@fontsource-variable/inter": "^5.3.0",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0"
+  }
+}

@@ -1,0 +1,66 @@
+/*
+ * Токены дизайн-системы из DESIGN.md (VoltAgent/awesome-design-md, Airbnb).
+ * Отличия от оригинала: вместо закрытого шрифта Airbnb Cereal — Inter (его советует сам DESIGN.md,
+ * и в нём есть кириллица), а бренд-акцент Rausch используется только для главных действий.
+ */
+:root {
+  /* Цвета */
+  --color-primary: #ff385c;
+  --color-primary-active: #e00b41;
+  --color-primary-disabled: #ffd1da;
+  --color-ink: #222222;
+  --color-body: #3f3f3f;
+  --color-muted: #6a6a6a;
+  --color-muted-soft: #929292;
+  --color-hairline: #dddddd;
+  --color-hairline-soft: #ebebeb;
+  --color-border-strong: #c1c1c1;
+  --color-canvas: #ffffff;
+  --color-surface-soft: #f7f7f7;
+  --color-surface-strong: #f2f2f2;
+  --color-on-primary: #ffffff;
+  --color-error: #c13515;
+
+  /* Шрифт */
+  --font-sans: 'Inter Variable', Inter, -apple-system, system-ui, Roboto, 'Helvetica Neue', sans-serif;
+
+  /* Скругления */
+  --radius-xs: 4px;
+  --radius-sm: 8px;
+  --radius-md: 14px;
+  --radius-lg: 20px;
+  --radius-xl: 32px;
+  --radius-full: 9999px;
+
+  /* Отступы */
+  --space-xxs: 2px;
+  --space-xs: 4px;
+  --space-sm: 8px;
+  --space-md: 12px;
+  --space-base: 16px;
+  --space-lg: 24px;
+  --space-xl: 32px;
+  --space-xxl: 48px;
+  --space-section: 64px;
+
+  /* Единственный уровень тени в системе */
+  --shadow-float: rgba(0, 0, 0, 0.02) 0 0 0 1px, rgba(0, 0, 0, 0.04) 0 2px 6px 0, rgba(0, 0, 0, 0.1) 0 4px 8px 0;
+
+  /* Сетка */
+  --content-width: 720px;
+  --content-width-wide: 1120px;
+  --gutter: 16px;
+  --topbar-height: 64px;
+}
+
+@media (min-width: 744px) {
+  :root {
+    --gutter: 24px;
+  }
+}
+
+@media (min-width: 1128px) {
+  :root {
+    --gutter: 40px;
+  }
+}

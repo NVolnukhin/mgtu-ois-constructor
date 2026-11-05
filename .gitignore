@@ -1,0 +1,12 @@
+# Зависимости и сборка
+node_modules/
+dist/
+*.tsbuildinfo
+
+# Локальное окружение
+.env*
+*.local
+.DS_Store
+.vscode/
+.idea/
+npm-debug.log*
