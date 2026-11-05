@@ -47,7 +47,11 @@ export function QuestionScreen(props: QuestionScreenProps) {
   useEffect(() => {
     titleRef.current?.focus({ preventScroll: true });
     const next = steps[index + 1]?.question.image?.url;
-    if (next && isSafeImageUrl(next)) new Image().src = next;
+    if (next && isSafeImageUrl(next)) {
+      const preload = new Image();
+      preload.referrerPolicy = 'no-referrer';
+      preload.src = next;
+    }
   }, [index, steps]);
 
   function submit(event: FormEvent) {

@@ -375,6 +375,28 @@ const CASES: Record<string, () => void> = {
     strictEqual(base.testProfiles.some((profile) => 'general-time' in profile.answers), false, 'ответы профилей чистятся');
   },
 
+  'редактор: всё, что он сохраняет, читается заново из хранилища'() {
+    // Хранилище проверяет записи через parseBase: нечитаемая запись — это потерянная база.
+    const reloads = (base: KnowledgeBase, why: string) => strictEqual(parseBase(JSON.parse(JSON.stringify(base))).ok, true, why);
+    const base = emptyBase();
+    reloads(base, 'пустая база');
+    const attribute = addAttribute(base);
+    const group = addGroup(base);
+    const object = addObject(base);
+    object.group = group.id;
+    addBlock(base);
+    const question = addQuestion(base, base.blocks[0].id);
+    reloads(base, 'пустые тексты — не ошибка структуры');
+    setWeight(question.options[0], attribute.id, -3);
+    setPhrase(question.options[0], 'reasons', group.id, 'Причина');
+    question.options = [];
+    reloads(base, 'вопрос без вариантов');
+    addProfile(base, { answers: { [question.id]: [] }, expectGroup: [group.id], expectTop: [object.id] });
+    reloads(base, 'профиль');
+    removeGroup(base, group.id);
+    reloads(base, 'после удаления группы');
+  },
+
   'редактор: копия примера независима и даёт те же результаты'() {
     const original = loadExampleCopy();
     const copy = copyOf(original);

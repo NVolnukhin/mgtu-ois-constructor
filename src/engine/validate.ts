@@ -55,8 +55,7 @@ export function validateBase(base: KnowledgeBase): Issue[] {
 
   // Основное
   if (!base.title.trim()) error('general', 'Нет названия базы.');
-  for (const { image, where } of baseImages(base)) {
-    const section: IssueSection = where.startsWith('группа') ? 'groups' : where === 'обложка базы' ? 'general' : 'questions';
+  for (const { image, where, section } of baseImages(base)) {
     if (!isSafeImageUrl(image.url)) error(section, `Картинка (${where}): допускаются только адреса http(s) и относительные пути.`);
     if (image.position && !isSafeImagePosition(image.position)) warning(section, `Картинка (${where}): кадрирование должно быть вроде «50% 30%».`);
     for (const link of [image.credit?.url, image.credit?.licenseUrl]) {

@@ -13,10 +13,17 @@ export type Route =
 const SECTIONS: BaseSection[] = ['test', 'result', 'kb', 'wm', 'credits', 'checks', 'edit'];
 
 function parseRoute(hash: string): Route {
-  const [root, id, section, tab] = hash.replace(/^#\/?/, '').split('/');
-  if (root !== 'base' || !id) return { name: 'home' };
-  if (section === undefined || !SECTIONS.includes(section as BaseSection)) return { name: 'base', id: decodeURIComponent(id), section: 'start' };
-  return { name: 'base', id: decodeURIComponent(id), section: section as BaseSection, tab };
+  const [root, encodedId, section, tab] = hash.replace(/^#\/?/, '').split('/');
+  if (root !== 'base' || !encodedId) return { name: 'home' };
+  let id: string;
+  try {
+    id = decodeURIComponent(encodedId);
+  } catch {
+    // Адрес набрали вручную с ошибкой: неверный % не должен ронять приложение.
+    return { name: 'home' };
+  }
+  if (section === undefined || !SECTIONS.includes(section as BaseSection)) return { name: 'base', id, section: 'start' };
+  return { name: 'base', id, section: section as BaseSection, tab };
 }
 
 export const HOME_PATH = '#/';

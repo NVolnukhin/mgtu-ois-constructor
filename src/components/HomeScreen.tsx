@@ -4,10 +4,10 @@ import { copyOf, emptyBase } from '../editor/ops.ts';
 import { allQuestions, attributeRules } from '../engine/scoring.ts';
 import type { KnowledgeBase } from '../engine/types.ts';
 import { validateBase } from '../engine/validate.ts';
-import { downloadBase, readBaseFile } from '../files.ts';
+import { downloadBase, downloadText, readBaseFile } from '../files.ts';
 import { plural } from '../plural.ts';
 import { basePath, navigate } from '../router.ts';
-import { createBase, deleteBase, exampleRecord, storageUsage, useStore } from '../storage.ts';
+import { createBase, deleteBase, exampleRecord, rawRecord, storageUsage, useStore } from '../storage.ts';
 import type { BaseRecord } from '../storage.ts';
 import { Photo } from './Photo.tsx';
 
@@ -175,8 +175,11 @@ function BrokenCard({ id }: { id: string }) {
   return (
     <li className="base-card">
       <h3 className="base-card__title">Запись не читается</h3>
-      <p className="base-card__text">Данные этой базы в браузере повреждены. Открыть её нельзя.</p>
+      <p className="base-card__text">Данные этой базы в браузере повреждены, открыть её нельзя. Запись можно скачать как есть и попробовать поправить вручную.</p>
       <div className="base-card__actions">
+        <button type="button" className="text-button" onClick={() => downloadText(rawRecord(id) ?? '', 'Повреждённая запись.json')}>
+          Скачать как есть
+        </button>
         <button type="button" className="text-button" onClick={remove}>
           Удалить
         </button>

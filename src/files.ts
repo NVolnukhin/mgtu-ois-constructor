@@ -15,11 +15,15 @@ function fileName(title: string): string {
 
 /** Скачивает базу файлом. Этот файл открывается в любом браузере через «Импорт JSON». */
 export function downloadBase(base: KnowledgeBase): void {
-  const blob = new Blob([JSON.stringify(base, null, 2)], { type: 'application/json' });
+  downloadText(JSON.stringify(base, null, 2), fileName(base.title));
+}
+
+export function downloadText(text: string, name: string): void {
+  const blob = new Blob([text], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
   const link = document.createElement('a');
   link.href = url;
-  link.download = fileName(base.title);
+  link.download = name;
   document.body.append(link);
   link.click();
   link.remove();

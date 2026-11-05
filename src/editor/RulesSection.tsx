@@ -125,18 +125,17 @@ interface ConditionEditorProps {
 function ConditionEditor({ condition, label, onChange }: ConditionEditorProps) {
   const { steps, questionById } = useBase();
   const question: Question | undefined = questionById[condition.question];
+  // Вопрос без вариантов выбрать нельзя: у условия не было бы значения.
+  const choices = steps.filter(({ question: item }) => item.options.length > 0);
   return (
     <span className="rule-form__selects">
       <select
         className="cell-input"
         aria-label={`${label}: параметр`}
         value={condition.question}
-        onChange={(event) => {
-          const next = questionById[event.target.value];
-          onChange({ question: event.target.value, option: next?.options[0]?.id ?? '' });
-        }}
+        onChange={(event) => onChange({ question: event.target.value, option: questionById[event.target.value].options[0].id })}
       >
-        {steps.map(({ question: item, index }) => (
+        {choices.map(({ question: item, index }) => (
           <option key={item.id} value={item.id}>
             {index + 1}. {item.parameter || item.text || 'Без названия'}
           </option>

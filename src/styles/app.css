@@ -1607,8 +1607,10 @@ a {
   font-size: 14px;
 }
 
-/* Широкие таблицы прокручиваются внутри себя — сама страница по горизонтали не едет. */
+/* Широкие таблицы прокручиваются внутри себя — сама страница по горизонтали не едет.
+   position: relative — чтобы и скрытые подписи в ячейках оставались внутри области прокрутки. */
 .table-scroll {
+  position: relative;
   overflow-x: auto;
   border-radius: var(--radius-md);
   box-shadow: inset 0 0 0 1px var(--color-hairline);
@@ -2171,6 +2173,20 @@ a {
   gap: var(--space-sm);
 }
 
+/* Широкие таблицы прокручиваются внутри себя: колонки сеток редактора не растягиваются под содержимое. */
+.editor__layout,
+.editor-list,
+.editor-card,
+.editor-blocks,
+.editor-block,
+.editor-questions,
+.editor-question__body,
+.editor-options,
+.form-stack,
+.form-grid {
+  grid-template-columns: minmax(0, 1fr);
+}
+
 .editor__layout {
   display: grid;
   gap: var(--space-lg);
@@ -2520,11 +2536,18 @@ a {
 /* Таблица с полями: первая колонка остаётся на месте при прокрутке вбок */
 
 .matrix__sticky {
-  position: sticky;
-  left: 0;
-  z-index: 1;
-  min-width: 260px;
+  min-width: 200px;
   background: var(--color-canvas);
+}
+
+/* На телефоне первая колонка не закреплена: иначе она закрыла бы почти всю таблицу. */
+@media (min-width: 744px) {
+  .matrix__sticky {
+    position: sticky;
+    left: 0;
+    z-index: 1;
+    min-width: 260px;
+  }
 }
 
 .kb-table thead th.matrix__sticky {

@@ -30,18 +30,26 @@ export function isSafeImagePosition(position: string): boolean {
   return /^[a-z0-9\s.%-]*$/i.test(position);
 }
 
-/** Все картинки базы с подписью, где каждая используется. */
-export function baseImages(base: KnowledgeBase): { image: ImageRef; where: string }[] {
-  const found: { image: ImageRef; where: string }[] = [];
-  const add = (image: ImageRef | undefined, where: string) => {
-    if (image) found.push({ image, where });
+export interface FoundImage {
+  image: ImageRef;
+  /** Где используется: для сообщений о проблемах. */
+  where: string;
+  /** Раздел редактора, где картинка правится. */
+  section: 'general' | 'groups' | 'questions';
+}
+
+/** Все картинки базы. */
+export function baseImages(base: KnowledgeBase): FoundImage[] {
+  const found: FoundImage[] = [];
+  const add = (image: ImageRef | undefined, where: string, section: FoundImage['section']) => {
+    if (image) found.push({ image, where, section });
   };
-  add(base.image, 'обложка базы');
-  for (const group of base.groups) add(group.image, `группа «${group.title}»`);
+  add(base.image, 'обложка базы', 'general');
+  for (const group of base.groups) add(group.image, `группа «${group.title}»`, 'groups');
   for (const block of base.blocks) {
     for (const question of block.questions) {
-      add(question.image, `вопрос «${question.parameter}»`);
-      for (const option of question.options) add(option.image, `вариант «${option.text}»`);
+      add(question.image, `вопрос «${question.parameter}»`, 'questions');
+      for (const option of question.options) add(option.image, `вариант «${option.text}»`, 'questions');
     }
   }
   return found;

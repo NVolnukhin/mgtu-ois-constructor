@@ -3,7 +3,7 @@
 
 import { useEffect, useMemo, useReducer } from 'react';
 import type { CompiledBase } from './base.ts';
-import { infer, toggleOption } from './engine/scoring.ts';
+import { infer, selectedOptions, toggleOption } from './engine/scoring.ts';
 import type { Answers } from './engine/types.ts';
 import { clearSession, loadSession, saveSession } from './storage.ts';
 
@@ -30,13 +30,24 @@ export function nearestAsked(compiled: CompiledBase, from: number, direction: 1 
   return null;
 }
 
-/** База могла измениться с прошлого раза, поэтому сохранённый номер вопроса приводим к допустимому. */
+/** Оставляет только ответы на существующие вопросы и варианты; в вопросе с одним ответом — один. */
+function currentAnswers(compiled: CompiledBase, saved: Answers): Answers {
+  const answers: Answers = {};
+  for (const { question } of compiled.steps) {
+    const selected = selectedOptions(question, saved).map((option) => option.id);
+    if (selected.length > 0) answers[question.id] = question.type === 'single' ? selected.slice(0, 1) : selected;
+  }
+  return answers;
+}
+
+/** База могла измениться с прошлого раза, поэтому сохранённые ответы и номер вопроса приводим к допустимым. */
 function load(compiled: CompiledBase): QuizState {
   const saved = loadSession(compiled.id);
   if (!saved) return INITIAL;
+  const answers = currentAnswers(compiled, saved.answers);
   const last = Math.max(0, compiled.steps.length - 1);
   const step = Math.min(Math.max(0, saved.step), last);
-  return { step: nearestAsked(compiled, step, 1, saved.answers) ?? 0, answers: saved.answers };
+  return { step: nearestAsked(compiled, step, 1, answers) ?? 0, answers };
 }
 
 export function useQuizState(compiled: CompiledBase) {

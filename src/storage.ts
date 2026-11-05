@@ -200,8 +200,10 @@ export function deleteBase(id: string): void {
   });
 }
 
-export function getRecord(id: string): BaseRecord | undefined {
-  return id === EXAMPLE_ID ? exampleRecord : state.records.find((record) => record.id === id);
+/** Текст записи как есть: нечитаемую запись можно скачать и поправить вручную. */
+export function rawRecord(id: string): string | null {
+  const key = `${BASE_PREFIX}${id}`;
+  return pending.get(key) ?? readStored(key);
 }
 
 // ---------- Подписка для React ----------
