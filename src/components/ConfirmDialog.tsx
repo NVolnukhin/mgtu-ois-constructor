@@ -93,10 +93,10 @@ function ConfirmDialog({ request, onAnswer }: { request: ConfirmRequest; onAnswe
           </p>
         )}
         <div className="confirm__actions">
-          <button ref={cancelRef} type="button" className="btn btn--secondary" onClick={() => answer(false)}>
+          <button ref={cancelRef} type="button" className="btn btn--secondary btn--small" onClick={() => answer(false)}>
             Отмена
           </button>
-          <button type="button" className="btn btn--primary" onClick={() => answer(true)}>
+          <button type="button" className="btn btn--primary btn--small" onClick={() => answer(true)}>
             {request.action}
           </button>
         </div>
