@@ -3072,11 +3072,6 @@ html:has(.confirm[open]) {
   border-top: 1px solid var(--color-hairline-soft);
 }
 
-/* Подпись «Отмена» начинается вровень с текстом, а не с невидимой рамкой кнопки. */
-.confirm__cancel {
-  margin-left: calc(-1 * var(--space-base));
-}
-
 @media (max-width: 743px) {
   .confirm {
     width: 100%;
@@ -3091,6 +3086,10 @@ html:has(.confirm[open]) {
 
   .confirm__box {
     padding-bottom: calc(var(--space-base) + env(safe-area-inset-bottom));
+  }
+
+  .confirm__actions .btn {
+    flex: 1;
   }
 }
 
