@@ -9,6 +9,7 @@ import { plural } from '../plural.ts';
 import { basePath, navigate } from '../router.ts';
 import { createBase, deleteBase, exampleRecord, rawRecord, storageUsage, useStore } from '../storage.ts';
 import type { BaseRecord } from '../storage.ts';
+import { useConfirm } from './ConfirmDialog.tsx';
 import { Photo } from './Photo.tsx';
 
 /** Сколько ошибок импорта показывать: в сломанном файле их могут быть сотни. */
@@ -131,9 +132,15 @@ function BaseCard({ record }: { record: BaseRecord }) {
   const { id, base, updatedAt } = record;
   const errors = useMemo(() => validateBase(base).filter((issue) => issue.severity === 'error').length, [base]);
   const changed = new Date(updatedAt).toLocaleString('ru-RU', { day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' });
+  const confirm = useConfirm();
 
-  function remove() {
-    if (window.confirm(`Удалить базу «${base.title || 'без названия'}»? Вернуть её можно будет, только если есть файл JSON.`)) deleteBase(id);
+  async function remove() {
+    const yes = await confirm({
+      title: `Удалить базу «${base.title || 'без названия'}»?`,
+      message: 'Вернуть её можно будет, только если есть файл JSON.',
+      action: 'Удалить',
+    });
+    if (yes) deleteBase(id);
   }
 
   return (
@@ -169,8 +176,15 @@ function BaseCard({ record }: { record: BaseRecord }) {
 }
 
 function BrokenCard({ id }: { id: string }) {
-  function remove() {
-    if (window.confirm('Удалить запись, которую не удалось прочитать?')) deleteBase(id);
+  const confirm = useConfirm();
+
+  async function remove() {
+    const yes = await confirm({
+      title: 'Удалить запись, которую не удалось прочитать?',
+      message: 'После удаления её уже не получится скачать и поправить вручную.',
+      action: 'Удалить',
+    });
+    if (yes) deleteBase(id);
   }
   return (
     <li className="base-card">

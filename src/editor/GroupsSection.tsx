@@ -1,10 +1,12 @@
 import { useBase } from '../base.ts';
+import { useConfirm } from '../components/ConfirmDialog.tsx';
 import type { Group } from '../engine/types.ts';
 import type { UpdateBase } from './EditorScreen.tsx';
 import { ImageField, IssueList, ListField, RowActions, SectionHead, SelectField, TextField } from './fields.tsx';
 import { addGroup, moveItem, removeGroup } from './ops.ts';
 
 export function GroupsSection({ update }: { update: UpdateBase }) {
+  const confirm = useConfirm();
   const { base, issues } = useBase();
 
   const edit = (id: string, change: (group: Group) => void) =>
@@ -13,15 +15,19 @@ export function GroupsSection({ update }: { update: UpdateBase }) {
       if (group) change(group);
     });
 
-  function remove(group: Group) {
+  async function remove(group: Group) {
     const last = base.groups.length === 1;
     const inProfiles = base.testProfiles.some(
       (profile) => profile.expectGroup?.includes(group.id) || (last && (profile.expectClose !== undefined || profile.expectWeak !== undefined)),
     );
-    const question =
-      `Удалить группу «${group.title || 'без названия'}»? Объекты и блоки останутся без группы, связанный атрибут останется в базе.` +
-      (inProfiles ? ' Тестовые профили перестанут проверять связанные с ней ожидания.' : '');
-    if (window.confirm(question)) update((draft) => removeGroup(draft, group.id));
+    const yes = await confirm({
+      title: `Удалить группу «${group.title || 'без названия'}»?`,
+      message:
+        'Объекты и блоки останутся без группы, связанный атрибут останется в базе.' +
+        (inProfiles ? ' Тестовые профили перестанут проверять связанные с ней ожидания.' : ''),
+      action: 'Удалить',
+    });
+    if (yes) update((draft) => removeGroup(draft, group.id));
   }
 
   return (

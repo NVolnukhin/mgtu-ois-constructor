@@ -4,6 +4,7 @@ import { BaseLayout } from './components/BaseLayout.tsx';
 import { ChecksScreen } from './components/ChecksScreen.tsx';
 import { ErrorBoundary } from './components/ErrorBoundary.tsx';
 import { HomeScreen } from './components/HomeScreen.tsx';
+import { SaveToast } from './components/SaveToast.tsx';
 import { SessionScreens } from './components/SessionScreens.tsx';
 import { EditorScreen } from './editor/EditorScreen.tsx';
 import { HOME_PATH, useRoute } from './router.ts';
@@ -38,6 +39,7 @@ export function App() {
       <ErrorBoundary resetKey={place}>
         {route.name === 'home' ? <HomeLayout /> : <BaseRoute id={route.id} section={route.section} tab={route.tab} />}
       </ErrorBoundary>
+      <SaveToast />
     </>
   );
 }

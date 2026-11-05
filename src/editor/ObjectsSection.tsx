@@ -1,4 +1,5 @@
 import { useBase } from '../base.ts';
+import { useConfirm } from '../components/ConfirmDialog.tsx';
 import { attributeLabel, level } from '../engine/scoring.ts';
 import type { RankedObject } from '../engine/types.ts';
 import { VALUE_RANGE } from '../engine/validate.ts';
@@ -7,6 +8,7 @@ import { IssueList, RowActions, ScaleSelect, SectionHead } from './fields.tsx';
 import { addObject, moveItem, removeObject } from './ops.ts';
 
 export function ObjectsSection({ update }: { update: UpdateBase }) {
+  const confirm = useConfirm();
   const { base, issues } = useBase();
   const hasGroups = base.groups.length > 0;
 
@@ -16,8 +18,9 @@ export function ObjectsSection({ update }: { update: UpdateBase }) {
       if (object) change(object);
     });
 
-  function remove(object: RankedObject) {
-    if (window.confirm(`Удалить объект «${object.title || 'без названия'}»?`)) update((draft) => removeObject(draft, object.id));
+  async function remove(object: RankedObject) {
+    const yes = await confirm({ title: `Удалить объект «${object.title || 'без названия'}»?`, action: 'Удалить' });
+    if (yes) update((draft) => removeObject(draft, object.id));
   }
 
   return (

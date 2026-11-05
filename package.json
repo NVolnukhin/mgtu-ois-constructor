@@ -2,7 +2,7 @@
   "name": "mgtu-ois-constructor",
   "private": true,
   "version": "0.1.0",
-  "description": "Конструктор экспертных систем на основе прототипа ДЗ 2-1 по ОИС",
+  "description": "Конструктор экспертных систем на основе прототипа ДЗ по ОИС",
   "type": "module",
   "engines": {
     "node": ">=22.18"

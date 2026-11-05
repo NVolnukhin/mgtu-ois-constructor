@@ -1,4 +1,4 @@
-// Проверки базы знаний: ошибки в базе, требования ДЗ 2-1, тестовые профили.
+// Проверки базы знаний: ошибки в базе, требования ДЗ, тестовые профили.
 // Чистые функции: их используют и экран «Проверка» в браузере, и npm run check.
 
 import { baseImages, isSafeImagePosition, isSafeImageUrl, isSafeLinkUrl } from './images.ts';
@@ -297,7 +297,7 @@ export function parseForImport(text: string): ParseResult {
   return errors.length > 0 ? { ok: false, errors } : parsed;
 }
 
-// ---------- Требования ДЗ 2-1 ----------
+// ---------- Требования ДЗ ----------
 
 /** Требования к прототипу экспертной системы из задания. */
 export const REQUIREMENTS = { questions: 20, parameters: 10, objects: 20, attributes: 10, top: 5 };
@@ -309,7 +309,7 @@ export interface RequirementRow {
   ok: boolean;
 }
 
-/** Требования ДЗ 2-1: для других задач они необязательны, поэтому это не ошибки базы. */
+/** Требования ДЗ: для других задач они необязательны, поэтому это не ошибки базы. */
 export function checkRequirements(base: KnowledgeBase): RequirementRow[] {
   const questions = allQuestions(base).length;
   const minAsked = minAskedQuestions(base);

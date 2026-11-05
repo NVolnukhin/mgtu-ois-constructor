@@ -56,6 +56,7 @@ const pending = new Map<string, string>();
 /** Уже разобранные записи: чтобы не менять объект базы, если её текст не изменился. */
 const decoded = new Map<string, { raw: string; record: BaseRecord | null }>();
 const listeners = new Set<() => void>();
+const editListeners = new Set<(saved: boolean) => void>();
 
 function storedBaseKeys(): string[] {
   try {
@@ -175,6 +176,7 @@ export function updateBase(id: string, change: (draft: KnowledgeBase) => void): 
   const check = parseBase(base);
   if (!check.ok) {
     console.error('Правка не сохранена: после неё база не читается.', check.errors);
+    for (const listener of editListeners) listener(false);
     return;
   }
   const record: BaseRecord = { ...current, base, updatedAt: Date.now() };
@@ -183,7 +185,9 @@ export function updateBase(id: string, change: (draft: KnowledgeBase) => void): 
   decoded.set(key, { raw, record });
   pending.set(key, raw);
   const records = [record, ...state.records.filter((item) => item.id !== id)];
-  publish({ ...state, records, problem: flush() });
+  const problem = flush();
+  publish({ ...state, records, problem });
+  for (const listener of editListeners) listener(problem === null);
 }
 
 /** Удаляет базу вместе с её ответами. Освободившееся место сразу идёт на неудавшиеся записи. */
@@ -221,6 +225,12 @@ function subscribe(listener: () => void): () => void {
 
 export function useStore(): StoreState {
   return useSyncExternalStore(subscribe, () => state);
+}
+
+/** Подписка на правки баз в этой вкладке: saved — правка дошла до localStorage. */
+export function onBaseEdited(listener: (saved: boolean) => void): () => void {
+  editListeners.add(listener);
+  return () => editListeners.delete(listener);
 }
 
 if (typeof window !== 'undefined') {

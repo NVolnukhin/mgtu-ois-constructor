@@ -1,14 +1,23 @@
 import { useState } from 'react';
 import { useBase } from '../base.ts';
+import { useConfirm } from '../components/ConfirmDialog.tsx';
 import { allQuestions, attributeLabel, weight } from '../engine/scoring.ts';
-import type { Block, Group, Option, Question } from '../engine/types.ts';
+import type { Block, Group, Option, Question, Rule } from '../engine/types.ts';
 import { WEIGHT_RANGE } from '../engine/validate.ts';
 import { plural } from '../plural.ts';
 import type { UpdateBase } from './EditorScreen.tsx';
 import { CheckboxField, ImageField, IssueList, RowActions, ScaleSelect, SectionHead, SelectField, TextField } from './fields.tsx';
 import { addBlock, addQuestion, moveItem, moveQuestion, newOption, removeBlock, removeOption, removeQuestion, rulesUsing, setPhrase, setQuestionType, setWeight } from './ops.ts';
 
+/** Что пропадёт вместе с вопросом или вариантом: правила, которые на него ссылаются. */
+function rulesLost(rules: Rule[]): string {
+  if (rules.length === 0) return '';
+  const titles = rules.map((rule) => rule.title).join(', ');
+  return rules.length === 1 ? `Вместе с ним пропадёт правило ${titles}.` : `Вместе с ним пропадут правила ${titles}.`;
+}
+
 export function QuestionsSection({ update }: { update: UpdateBase }) {
+  const confirm = useConfirm();
   const { base, issues, steps } = useBase();
   // Какие вопросы раскрыты. Форма вопроса большая, поэтому по умолчанию видно только оглавление.
   const [open, setOpen] = useState<Set<string>>(new Set());
@@ -27,10 +36,14 @@ export function QuestionsSection({ update }: { update: UpdateBase }) {
       if (block) change(block);
     });
 
-  function removeWholeBlock(block: Block, index: number) {
+  async function removeWholeBlock(block: Block, index: number) {
     const lost = plural(block.questions.length, ['вопрос', 'вопроса', 'вопросов']);
-    const question = `Удалить блок ${index + 1}${block.title ? ` «${block.title}»` : ''}?${block.questions.length > 0 ? ` Вместе с ним пропадут ${lost} и правила, которые на них ссылаются.` : ''}`;
-    if (window.confirm(question)) update((draft) => removeBlock(draft, block.id));
+    const yes = await confirm({
+      title: `Удалить блок ${index + 1}${block.title ? ` «${block.title}»` : ''}?`,
+      message: block.questions.length > 0 ? `Вместе с ним пропадут ${lost} и правила, которые на них ссылаются.` : undefined,
+      action: 'Удалить',
+    });
+    if (yes) update((draft) => removeBlock(draft, block.id));
   }
 
   function createQuestion(blockId: string) {
@@ -125,6 +138,7 @@ interface QuestionCardProps {
 }
 
 function QuestionCard({ question, index, total, open, onToggle, update }: QuestionCardProps) {
+  const confirm = useConfirm();
   const { base, issues } = useBase();
   const inferredBy = base.rules.filter((rule) => rule.then.question === question.id);
   const failed = issues.some((issue) => issue.target === question.id && issue.severity === 'error');
@@ -136,10 +150,11 @@ function QuestionCard({ question, index, total, open, onToggle, update }: Questi
       if (item) change(item);
     });
 
-  function remove() {
+  async function remove() {
     const rules = rulesUsing(base, question.id);
-    const lost = rules.length > 0 ? ` Вместе с ним пропадут правила ${rules.map((rule) => rule.title).join(', ')}.` : '';
-    if (window.confirm(`Удалить вопрос ${index + 1} «${title}»?${lost}`)) update((draft) => removeQuestion(draft, question.id));
+    const lost = rulesLost(rules);
+    const yes = await confirm({ title: `Удалить вопрос ${index + 1}?`, message: [`«${title}».`, lost].filter(Boolean).join(' '), action: 'Удалить' });
+    if (yes) update((draft) => removeQuestion(draft, question.id));
   }
 
   return (
@@ -252,6 +267,7 @@ interface OptionsTableProps {
 
 /** Варианты ответа и их веса: правила «параметр + атрибут». */
 function OptionsTable({ question, edit, update }: OptionsTableProps) {
+  const confirm = useConfirm();
   const { base, attributeRuleOf } = useBase();
 
   const editOption = (id: string, change: (option: Option) => void) =>
@@ -260,12 +276,12 @@ function OptionsTable({ question, edit, update }: OptionsTableProps) {
       if (option) change(option);
     });
 
-  function remove(option: Option, index: number) {
+  async function remove(option: Option, index: number) {
     const rules = rulesUsing(base, question.id, option.id);
-    const lost = rules.length > 0 ? ` Вместе с ним пропадут правила ${rules.map((rule) => rule.title).join(', ')}.` : '';
-    if (window.confirm(`Удалить вариант ${index + 1}${option.text ? ` «${option.text}»` : ''}?${lost}`)) {
-      update((draft) => removeOption(draft, question.id, option.id));
-    }
+    const lost = rulesLost(rules);
+    const name = option.text ? `«${option.text}».` : '';
+    const yes = await confirm({ title: `Удалить вариант ${index + 1}?`, message: [name, lost].filter(Boolean).join(' ') || undefined, action: 'Удалить' });
+    if (yes) update((draft) => removeOption(draft, question.id, option.id));
   }
 
   return (

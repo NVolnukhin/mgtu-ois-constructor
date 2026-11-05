@@ -5,7 +5,7 @@ import type { KnowledgeBase } from '../engine/types.ts';
 import { downloadBase } from '../files.ts';
 import { plural } from '../plural.ts';
 import { basePath, navigate } from '../router.ts';
-import { createBase, updateBase } from '../storage.ts';
+import { createBase, updateBase, useStore } from '../storage.ts';
 import { AttributesSection } from './AttributesSection.tsx';
 import { GeneralSection } from './GeneralSection.tsx';
 import { GroupsSection } from './GroupsSection.tsx';
@@ -19,9 +19,20 @@ import { SettingsSection } from './SettingsSection.tsx';
 /** Как разделы редактора меняют базу: правят черновик, а он сразу сохраняется. */
 export type UpdateBase = (change: (draft: KnowledgeBase) => void) => void;
 
+/** Когда база сохранена последний раз: сегодня — только время, иначе ещё и дата. */
+function savedLabel(time: number): string {
+  const date = new Date(time);
+  if (date.toDateString() === new Date().toDateString()) {
+    return `в ${date.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}`;
+  }
+  return date.toLocaleString('ru-RU', { day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' });
+}
+
 /** Редактор базы. Рассчитан на компьютер, на телефоне работает с прокруткой. */
 export function EditorScreen({ tab }: { tab?: string }) {
   const { id, base, issues, builtIn, canRun, steps } = useBase();
+  const { records, problem } = useStore();
+  const savedAt = records.find((record) => record.id === id)?.updatedAt;
   const titleRef = useRef<HTMLHeadingElement>(null);
   const update: UpdateBase = useCallback((change) => updateBase(id, change), [id]);
   const section = EDITOR_SECTIONS.find((item) => item.id === tab)?.id ?? 'general';
@@ -69,7 +80,11 @@ export function EditorScreen({ tab }: { tab?: string }) {
             Редактор
           </h1>
           <p className="editor__status">
-            Изменения сохраняются сразу.{' '}
+            {problem ? (
+              <span className="editor__unsaved">Последние изменения не сохранены.</span>
+            ) : (
+              <>Изменения сохраняются сразу{savedAt ? `, последнее сохранение ${savedLabel(savedAt)}` : ''}.</>
+            )}{' '}
             {errors > 0 ? (
               <a href={basePath(id, 'checks')}>В базе {plural(errors, ['ошибка', 'ошибки', 'ошибок'])}: тест пока не запускается</a>
             ) : (

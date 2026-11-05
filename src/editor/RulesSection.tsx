@@ -1,4 +1,5 @@
 import { useBase } from '../base.ts';
+import { useConfirm } from '../components/ConfirmDialog.tsx';
 import { allQuestions } from '../engine/scoring.ts';
 import type { Condition, Question, Rule } from '../engine/types.ts';
 import { minAskedQuestions } from '../engine/validate.ts';
@@ -8,6 +9,7 @@ import { IssueList, RowActions, SectionHead, TextField } from './fields.tsx';
 import { addCondition, addRule, moveItem } from './ops.ts';
 
 export function RulesSection({ update }: { update: UpdateBase }) {
+  const confirm = useConfirm();
   const { base, issues, steps, attributeRules } = useBase();
   const sectionIssues = issues.filter((issue) => issue.section === 'rules');
   const canAdd = allQuestions(base).filter((question) => question.options.length > 0).length >= 2;
@@ -47,8 +49,8 @@ export function RulesSection({ update }: { update: UpdateBase }) {
                 label={`правило ${rule.title}`}
                 onUp={index > 0 ? () => update((draft) => moveItem(draft.rules, index, -1)) : undefined}
                 onDown={index < base.rules.length - 1 ? () => update((draft) => moveItem(draft.rules, index, 1)) : undefined}
-                onRemove={() => {
-                  if (window.confirm(`Удалить правило ${rule.title}?`)) {
+                onRemove={async () => {
+                  if (await confirm({ title: `Удалить правило ${rule.title}?`, action: 'Удалить' })) {
                     update((draft) => void (draft.rules = draft.rules.filter((item) => item.id !== rule.id)));
                   }
                 }}

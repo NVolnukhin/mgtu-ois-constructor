@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef } from 'react';
 import { preferencePercent, useBase } from '../base.ts';
 import { buildProfile, infer, rankObjects, selectedOptions } from '../engine/scoring.ts';
 import type { Answers } from '../engine/types.ts';
+import { useConfirm } from './ConfirmDialog.tsx';
 import { RankingList } from './RankingList.tsx';
 
 interface WorkingMemoryScreenProps {
@@ -12,6 +13,7 @@ interface WorkingMemoryScreenProps {
 
 /** Просмотр рабочей базы данных: факты текущего сеанса и то, что из них вывела система. */
 export function WorkingMemoryScreen({ answers, returnPath, onReset }: WorkingMemoryScreenProps) {
+  const confirm = useConfirm();
   const { base, steps, attributeRuleOf } = useBase();
   const titleRef = useRef<HTMLHeadingElement>(null);
   const { effective, inferred, profile, ranking, filled } = useMemo(() => {
@@ -30,8 +32,9 @@ export function WorkingMemoryScreen({ answers, returnPath, onReset }: WorkingMem
     titleRef.current?.focus({ preventScroll: true });
   }, []);
 
-  function reset() {
-    if (window.confirm('Очистить рабочую базу данных? Все ответы будут удалены.')) onReset();
+  async function reset() {
+    const yes = await confirm({ title: 'Очистить рабочую базу данных?', message: 'Все ответы будут удалены.', action: 'Очистить' });
+    if (yes) onReset();
   }
 
   return (

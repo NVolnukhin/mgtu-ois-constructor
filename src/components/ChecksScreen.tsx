@@ -10,9 +10,11 @@ import type { ProfileResult } from '../engine/validate.ts';
 import { plural } from '../plural.ts';
 import { basePath } from '../router.ts';
 import { updateBase } from '../storage.ts';
+import { useConfirm } from './ConfirmDialog.tsx';
 
-/** Проверки базы: ошибки (всегда), требования ДЗ 2-1, тестовые профили. */
+/** Проверки базы: ошибки (всегда), требования ДЗ, тестовые профили. */
 export function ChecksScreen() {
+  const confirm = useConfirm();
   const { id, base, issues, builtIn, canRun } = useBase();
   const titleRef = useRef<HTMLHeadingElement>(null);
   const errors = issues.filter((issue) => issue.severity === 'error');
@@ -32,8 +34,9 @@ export function ChecksScreen() {
     setEditing(base.testProfiles.length);
   }
 
-  function removeProfile(index: number) {
-    if (!window.confirm(`Удалить профиль «${base.testProfiles[index].name || 'без названия'}»?`)) return;
+  async function removeProfile(index: number) {
+    const yes = await confirm({ title: `Удалить профиль «${base.testProfiles[index].name || 'без названия'}»?`, action: 'Удалить' });
+    if (!yes) return;
     updateBase(id, (draft) => void draft.testProfiles.splice(index, 1));
     setEditing(null);
   }
@@ -66,7 +69,7 @@ export function ChecksScreen() {
       </section>
 
       <section className="section">
-        <h2 className="section__title">Требования ДЗ 2-1</h2>
+        <h2 className="section__title">Требования ДЗ</h2>
         <p className="section__lead">
           Выполнено {requirementsMet} из {requirements.length}. Это требования к прототипу из задания: для других задач они необязательны, поэтому на
           запуск теста не влияют.

@@ -1,4 +1,5 @@
 import { useBase } from '../base.ts';
+import { useConfirm } from '../components/ConfirmDialog.tsx';
 import type { Attribute } from '../engine/types.ts';
 import { IMPORTANCE_MAX } from '../engine/validate.ts';
 import { plural } from '../plural.ts';
@@ -7,6 +8,7 @@ import { IssueList, NumberField, RowActions, SectionHead, TextField } from './fi
 import { addAttribute, attributeUsage, moveItem, removeAttribute } from './ops.ts';
 
 export function AttributesSection({ update }: { update: UpdateBase }) {
+  const confirm = useConfirm();
   const { base, issues } = useBase();
 
   const edit = (id: string, change: (attribute: Attribute) => void) =>
@@ -15,15 +17,19 @@ export function AttributesSection({ update }: { update: UpdateBase }) {
       if (attribute) change(attribute);
     });
 
-  function remove(attribute: Attribute) {
+  async function remove(attribute: Attribute) {
     const usage = attributeUsage(base, attribute.id);
     const lost = [
       usage.values > 0 && plural(usage.values, ['значение у объектов', 'значения у объектов', 'значений у объектов']),
       usage.weights > 0 && plural(usage.weights, ['вариант ответа с весом', 'варианта ответа с весом', 'вариантов ответа с весом']),
       ...usage.groups.map((group) => `группа «${group.title}»`),
     ].filter(Boolean);
-    const question = `Удалить атрибут «${attribute.title || 'без названия'}»?${lost.length > 0 ? ` Вместе с ним пропадут: ${lost.join(', ')}.` : ''}`;
-    if (window.confirm(question)) update((draft) => removeAttribute(draft, attribute.id));
+    const yes = await confirm({
+      title: `Удалить атрибут «${attribute.title || 'без названия'}»?`,
+      message: lost.length > 0 ? `Вместе с ним пропадут: ${lost.join(', ')}.` : undefined,
+      action: 'Удалить',
+    });
+    if (yes) update((draft) => removeAttribute(draft, attribute.id));
   }
 
   return (
