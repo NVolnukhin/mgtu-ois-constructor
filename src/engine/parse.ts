@@ -71,13 +71,15 @@ export function parseBase(input: unknown): ParseResult {
   const problem = (path: string, message: string) => {
     errors.push(`${path}: ${message}`);
   };
+  /** Путь к полю для сообщения об ошибке; у полей верхнего уровня пути нет. */
+  const field = (path: string, key: string) => (path ? `${path}.${key}` : key);
 
   /** Строка, которая в готовой базе есть всегда. Пустая строка — не ошибка структуры, её покажет validateBase. */
   const text = (source: Json, key: string, path: string): string => {
     const value = source[key];
     if (value === undefined) return '';
     if (typeof value !== 'string') {
-      problem(`${path}.${key}`, 'должна быть строка');
+      problem(field(path, key), 'должна быть строка');
       return '';
     }
     return value;
@@ -88,7 +90,7 @@ export function parseBase(input: unknown): ParseResult {
   const id = (source: Json, key: string, path: string): string => {
     const value = source[key];
     if (typeof value !== 'string' || !isSafeKey(value)) {
-      problem(`${path}.${key}`, 'нужен непустой id; имена вроде constructor не подходят');
+      problem(field(path, key), 'нужен непустой id; имена вроде constructor не подходят');
       return '';
     }
     return value;
@@ -100,7 +102,7 @@ export function parseBase(input: unknown): ParseResult {
     const value = source[key];
     if (value === undefined) return undefined;
     if (typeof value !== 'boolean') {
-      problem(`${path}.${key}`, 'должно быть true или false');
+      problem(field(path, key), 'должно быть true или false');
       return undefined;
     }
     return value;
@@ -110,7 +112,7 @@ export function parseBase(input: unknown): ParseResult {
     const value = source[key];
     if (value === undefined && !required) return [];
     if (!Array.isArray(value)) {
-      problem(`${path}${path ? '.' : ''}${key}`, 'должен быть список');
+      problem(field(path, key), 'должен быть список');
       return [];
     }
     return value;
@@ -131,7 +133,7 @@ export function parseBase(input: unknown): ParseResult {
     if (source[key] === undefined) return undefined;
     const values = list(source, key, path);
     if (values.some((value) => typeof value !== 'string')) {
-      problem(`${path}.${key}`, 'должен быть список строк');
+      problem(field(path, key), 'должен быть список строк');
       return undefined;
     }
     return values as string[];
@@ -141,12 +143,12 @@ export function parseBase(input: unknown): ParseResult {
     const value = source[key];
     if (value === undefined) return {};
     if (!isObject(value)) {
-      problem(`${path}.${key}`, 'должен быть объект вида { "id": число }');
+      problem(field(path, key), 'должен быть объект вида { "id": число }');
       return {};
     }
     const entries = Object.entries(value).filter(([name, number]) => {
       if (isSafeKey(name) && typeof number === 'number' && Number.isFinite(number)) return true;
-      problem(`${path}.${key}.${name}`, 'должно быть число');
+      problem(`${field(path, key)}.${name}`, 'должно быть число');
       return false;
     });
     return Object.fromEntries(entries) as Record<string, number>;
@@ -156,12 +158,12 @@ export function parseBase(input: unknown): ParseResult {
     const value = source[key];
     if (value === undefined) return undefined;
     if (!isObject(value)) {
-      problem(`${path}.${key}`, 'должен быть объект вида { "id": "текст" }');
+      problem(field(path, key), 'должен быть объект вида { "id": "текст" }');
       return undefined;
     }
     const entries = Object.entries(value).filter(([name, string]) => {
       if (isSafeKey(name) && typeof string === 'string') return true;
-      problem(`${path}.${key}.${name}`, 'должна быть строка');
+      problem(`${field(path, key)}.${name}`, 'должна быть строка');
       return false;
     });
     return Object.fromEntries(entries) as Record<string, string>;
@@ -171,7 +173,7 @@ export function parseBase(input: unknown): ParseResult {
     const value = source[key];
     if (value === undefined) return fallback;
     if (typeof value !== 'number' || !Number.isFinite(value) || !valid(value)) {
-      problem(`${path}.${key}`, rule);
+      problem(field(path, key), rule);
       return fallback;
     }
     return value;
@@ -180,7 +182,7 @@ export function parseBase(input: unknown): ParseResult {
   const link = (source: Json, key: string, path: string): string | undefined => {
     const value = optionalText(source, key, path);
     if (value && !isSafeLinkUrl(value)) {
-      problem(`${path}.${key}`, 'в ссылке допускается только http(s)');
+      problem(field(path, key), 'в ссылке допускается только http(s)');
       return undefined;
     }
     return value;
@@ -189,7 +191,7 @@ export function parseBase(input: unknown): ParseResult {
   const image = (source: Json, key: string, path: string): ImageRef | undefined => {
     const value = source[key];
     if (value === undefined) return undefined;
-    const at = `${path}.${key}`;
+    const at = field(path, key);
     if (!isObject(value)) {
       problem(at, 'должен быть объект с полем url');
       return undefined;
@@ -345,16 +347,15 @@ export function parseBase(input: unknown): ParseResult {
     });
   });
 
-  const root = 'база';
   const base: KnowledgeBase = prune({
     format: BASE_FORMAT,
     formatVersion: BASE_FORMAT_VERSION,
-    title: text(input, 'title', root),
-    subtitle: text(input, 'subtitle', root),
-    description: text(input, 'description', root),
-    author: text(input, 'author', root),
-    imagesNote: optionalText(input, 'imagesNote', root),
-    image: image(input, 'image', root),
+    title: text(input, 'title', ''),
+    subtitle: text(input, 'subtitle', ''),
+    description: text(input, 'description', ''),
+    author: text(input, 'author', ''),
+    imagesNote: optionalText(input, 'imagesNote', ''),
+    image: image(input, 'image', ''),
     settings,
     attributes,
     groups,

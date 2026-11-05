@@ -185,8 +185,15 @@ a {
   font-weight: 500;
   line-height: 1.25;
   text-align: center;
+  text-decoration: none;
   cursor: pointer;
   transition: background-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.btn--small {
+  min-height: 40px;
+  padding: 0 var(--space-base);
+  font-size: 14px;
 }
 
 .btn--primary {
@@ -284,6 +291,7 @@ a {
   border-radius: var(--radius-sm);
   background: transparent;
   text-align: left;
+  text-decoration: none;
   cursor: pointer;
 }
 
@@ -1901,4 +1909,190 @@ a {
   border-bottom: 2px solid var(--color-border-strong);
   border-left: 2px solid var(--color-border-strong);
   transform: rotate(-45deg) translate(2px, -1px);
+}
+
+/* ---------- Главный экран ---------- */
+
+/* Хранилище переполнено: видно на любом экране, поверх шапки при прокрутке. */
+.banner {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  padding: var(--space-md) var(--gutter);
+  background: var(--color-error);
+  color: var(--color-on-primary);
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.4;
+}
+
+.home__title {
+  font-size: 32px;
+  font-weight: 700;
+  line-height: 1.15;
+  letter-spacing: -0.5px;
+}
+
+.home__lead {
+  max-width: 720px;
+  margin-top: var(--space-base);
+  color: var(--color-body);
+  font-size: 17px;
+}
+
+.home__empty {
+  padding: var(--space-lg);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-soft);
+  color: var(--color-body);
+}
+
+@media (min-width: 744px) {
+  .home__title {
+    font-size: 44px;
+    letter-spacing: -1px;
+  }
+}
+
+.alert {
+  margin-top: var(--space-base);
+  padding: var(--space-base) 20px;
+  border-radius: var(--radius-md);
+  box-shadow: inset 0 0 0 1px var(--color-error);
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.alert__title {
+  color: var(--color-error);
+  font-weight: 600;
+}
+
+.alert__list {
+  display: grid;
+  gap: var(--space-xs);
+  margin-top: var(--space-sm);
+  padding-left: 18px;
+  overflow-wrap: anywhere;
+}
+
+.alert__more {
+  margin-top: var(--space-sm);
+  color: var(--color-muted);
+}
+
+.facts--small {
+  margin-top: var(--space-md);
+  gap: var(--space-xs);
+}
+
+.facts--small li {
+  padding: 2px var(--space-sm);
+  font-size: 12px;
+}
+
+.base-grid {
+  display: grid;
+  gap: var(--space-base);
+  list-style: none;
+}
+
+.base-card {
+  display: flex;
+  flex-direction: column;
+  padding: 20px;
+  border-radius: var(--radius-md);
+  box-shadow: inset 0 0 0 1px var(--color-hairline);
+  transition: box-shadow 0.15s ease;
+}
+
+.base-card:hover {
+  box-shadow: var(--shadow-float);
+}
+
+.base-card__title {
+  font-size: 18px;
+  font-weight: 600;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+
+.base-card__title a {
+  text-decoration: none;
+}
+
+.base-card__title a:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+/* Описание может быть длинным: в карточке хватит трёх строк. */
+.base-card__text {
+  display: -webkit-box;
+  margin-top: var(--space-sm);
+  overflow: hidden;
+  color: var(--color-body);
+  font-size: 14px;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+}
+
+.base-card__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-xs) var(--space-sm);
+  align-items: center;
+  margin-top: var(--space-md);
+  color: var(--color-muted);
+  font-size: 13px;
+}
+
+.base-card__errors {
+  color: var(--color-error);
+  font-weight: 600;
+}
+
+.base-card__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-sm) var(--space-md);
+  align-items: center;
+  margin-top: auto;
+  padding-top: var(--space-base);
+}
+
+.example-card {
+  display: grid;
+  gap: var(--space-lg);
+  align-items: center;
+}
+
+.example-card__photo {
+  aspect-ratio: 3 / 2;
+}
+
+.example-card__title {
+  margin-top: var(--space-xs);
+  font-size: 22px;
+  font-weight: 600;
+  line-height: 1.25;
+}
+
+@media (min-width: 744px) {
+  .base-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .example-card {
+    grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
+    gap: var(--space-xl);
+  }
+}
+
+@media (min-width: 1128px) {
+  .base-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
 }
