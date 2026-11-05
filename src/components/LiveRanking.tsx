@@ -1,6 +1,6 @@
 import { useState } from 'react';
+import { useBase } from '../base.ts';
 import type { ObjectScore } from '../engine/scoring.ts';
-import { quiz } from '../data.ts';
 import { RankingList } from './RankingList.tsx';
 
 interface LiveRankingProps {
@@ -12,21 +12,22 @@ interface LiveRankingProps {
   hasData: boolean;
 }
 
-/** Панель на экране вопроса: лучшие виды деятельности по уже данным ответам. */
+/** Панель на экране вопроса: лучшие объекты по уже данным ответам. */
 export function LiveRanking({ ranking, previous, hasData }: LiveRankingProps) {
+  const { base } = useBase();
   const [showAll, setShowAll] = useState(false);
-  const { topCount } = quiz.settings;
+  const { topCount } = base.settings;
   const previousRanks = previous ? new Map(previous.map((item) => [item.object.id, item.rank])) : undefined;
 
   return (
     <section className="live" aria-labelledby="live-title">
       <div className="live__head">
         <h2 id="live-title" className="live__title">
-          Сейчас тебе подходят
+          Сейчас подходят лучше всего
         </h2>
         <p className="live__note">Рейтинг пересчитывается после каждого ответа</p>
       </div>
-      {hasData ? (
+      {hasData && ranking.length > 0 ? (
         <>
           <p className="visually-hidden" aria-live="polite">
             Первое место: {ranking[0].object.title}
@@ -39,7 +40,7 @@ export function LiveRanking({ ranking, previous, hasData }: LiveRankingProps) {
           )}
         </>
       ) : (
-        <p className="live__empty">Выбери ответ — и здесь появятся виды деятельности, которые тебе подходят.</p>
+        <p className="live__empty">После первого ответа здесь появится рейтинг.</p>
       )}
     </section>
   );

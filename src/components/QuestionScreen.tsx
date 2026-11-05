@@ -1,10 +1,10 @@
 import { useEffect, useRef } from 'react';
 import type { FormEvent } from 'react';
-import type { ObjectScore } from '../engine/scoring.ts';
+import { useBase } from '../base.ts';
+import type { Step } from '../base.ts';
 import { isSafeImageUrl } from '../engine/images.ts';
+import type { ObjectScore } from '../engine/scoring.ts';
 import type { Option, Question, Rule } from '../engine/types.ts';
-import { quiz, steps } from '../data.ts';
-import type { Step } from '../data.ts';
 import { LiveRanking } from './LiveRanking.tsx';
 import { Photo } from './Photo.tsx';
 
@@ -35,10 +35,12 @@ interface QuestionScreenProps {
 }
 
 export function QuestionScreen(props: QuestionScreenProps) {
+  const { base, steps } = useBase();
   const { step, selected, position, total, progress, skipped, ranking, previousRanking, hasData } = props;
   const { question, block, blockIndex, index } = step;
   const titleRef = useRef<HTMLHeadingElement>(null);
   const inputType = question.type === 'single' ? 'radio' : 'checkbox';
+  const severalBlocks = base.blocks.length > 1;
 
   // Новый вопрос: фокус на его текст, чтобы экранный диктор сразу его прочитал,
   // и заранее грузим картинку следующего вопроса.
@@ -46,7 +48,7 @@ export function QuestionScreen(props: QuestionScreenProps) {
     titleRef.current?.focus({ preventScroll: true });
     const next = steps[index + 1]?.question.image?.url;
     if (next && isSafeImageUrl(next)) new Image().src = next;
-  }, [index]);
+  }, [index, steps]);
 
   function submit(event: FormEvent) {
     event.preventDefault();
@@ -63,9 +65,7 @@ export function QuestionScreen(props: QuestionScreenProps) {
       <div className="question__content">
         <div className="progress">
           <div className="progress__meta">
-            <span>
-              Блок {blockIndex + 1} из {quiz.blocks.length} · {block.title}
-            </span>
+            <span>{severalBlocks ? `Блок ${blockIndex + 1} из ${base.blocks.length}${block.title ? ` · ${block.title}` : ''}` : block.title}</span>
             <span>
               {position} / {total}
             </span>
@@ -78,7 +78,7 @@ export function QuestionScreen(props: QuestionScreenProps) {
             aria-valuemax={total}
             aria-valuenow={position}
           >
-            {quiz.blocks.map((item, i) => (
+            {base.blocks.map((item, i) => (
               <span key={item.id} className="progress__track">
                 <span className="progress__fill" style={{ width: `${progress[i] * 100}%` }} />
               </span>
@@ -89,7 +89,7 @@ export function QuestionScreen(props: QuestionScreenProps) {
         {skipped.map(({ question: skippedQuestion, rule, option }) => (
           <p key={skippedQuestion.id} className="notice">
             <span className="notice__label">Правило {rule.title}</span>
-            Вопрос «{skippedQuestion.parameter}» не задаётся: по твоему ответу система сама вывела значение «{option.text}».
+            Вопрос «{skippedQuestion.parameter}» не задаётся: по предыдущим ответам система сама вывела значение «{option.text}».
           </p>
         ))}
 
@@ -104,7 +104,7 @@ export function QuestionScreen(props: QuestionScreenProps) {
               {question.text}
             </h1>
           </legend>
-          {question.type === 'multiple' && <p className="question__hint">Отметь все подходящие варианты</p>}
+          {question.type === 'multiple' && <p className="question__hint">Можно отметить несколько вариантов</p>}
 
           <div className="options">
             {question.options.map((option) => {

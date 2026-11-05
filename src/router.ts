@@ -27,15 +27,26 @@ export function basePath(id: string, section: BaseSection = 'start', tab?: strin
   return tab ? `${root}/${section}/${tab}` : `${root}/${section}`;
 }
 
-/** replace — не оставлять текущий экран в истории: кнопка «Назад» его пропустит. */
+const listeners = new Set<() => void>();
+
+/**
+ * replace — не оставлять текущий экран в истории: кнопка «Назад» его пропустит.
+ * Событие hashchange приходит позже, поэтому подписчиков уведомляем сразу: новый маршрут
+ * и изменения состояния, сделанные рядом с переходом, должны попасть в один рендер.
+ */
 export function navigate(path: string, replace = false): void {
   if (replace) location.replace(path);
   else location.hash = path;
+  for (const listener of listeners) listener();
 }
 
 function subscribe(listener: () => void): () => void {
+  listeners.add(listener);
   window.addEventListener('hashchange', listener);
-  return () => window.removeEventListener('hashchange', listener);
+  return () => {
+    listeners.delete(listener);
+    window.removeEventListener('hashchange', listener);
+  };
 }
 
 export function useRoute(): Route {

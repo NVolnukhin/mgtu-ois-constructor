@@ -1,29 +1,30 @@
 import { useEffect, useMemo, useRef } from 'react';
+import { preferencePercent, useBase } from '../base.ts';
 import { buildProfile, infer, rankObjects, selectedOptions } from '../engine/scoring.ts';
 import type { Answers } from '../engine/types.ts';
-import { attributeRuleOf, preferencePercent, quiz, steps } from '../data.ts';
 import { RankingList } from './RankingList.tsx';
 
 interface WorkingMemoryScreenProps {
   answers: Answers;
+  returnPath: string;
   onReset: () => void;
-  onClose: () => void;
 }
 
 /** Просмотр рабочей базы данных: факты текущего сеанса и то, что из них вывела система. */
-export function WorkingMemoryScreen({ answers, onReset, onClose }: WorkingMemoryScreenProps) {
+export function WorkingMemoryScreen({ answers, returnPath, onReset }: WorkingMemoryScreenProps) {
+  const { base, steps, attributeRuleOf } = useBase();
   const titleRef = useRef<HTMLHeadingElement>(null);
   const { effective, inferred, profile, ranking, filled } = useMemo(() => {
-    const inference = infer(quiz, answers);
-    const profile = buildProfile(quiz, inference.answers);
+    const inference = infer(base, answers);
+    const profile = buildProfile(base, inference.answers);
     return {
       effective: inference.answers,
       inferred: inference.inferred,
       profile,
-      ranking: rankObjects(quiz, profile.preference),
+      ranking: rankObjects(base, profile.preference),
       filled: steps.filter(({ question }) => selectedOptions(question, inference.answers).length > 0).length,
     };
-  }, [answers]);
+  }, [base, steps, answers]);
 
   useEffect(() => {
     titleRef.current?.focus({ preventScroll: true });
@@ -41,7 +42,7 @@ export function WorkingMemoryScreen({ answers, onReset, onClose }: WorkingMemory
       <p className="page__lead">
         Факты текущего сеанса: параметры, полученные от пользователя и выведенные правилами «параметр + параметр»,
         сработавшие правила «параметр + атрибут» и профиль предпочтений, который из них получается. Хранятся в браузере
-        (localStorage). Сейчас известно {filled} из {steps.length} параметров.
+        (localStorage), у каждой базы свои. Сейчас известно {filled} из {steps.length} параметров.
       </p>
 
       <section className="section">
@@ -99,7 +100,7 @@ export function WorkingMemoryScreen({ answers, onReset, onClose }: WorkingMemory
               </tr>
             </thead>
             <tbody>
-              {quiz.attributes.map((attribute) => {
+              {base.attributes.map((attribute) => {
                 const value = profile.preference[attribute.id];
                 const span = profile.high[attribute.id] - profile.low[attribute.id];
                 return (
@@ -132,9 +133,9 @@ export function WorkingMemoryScreen({ answers, onReset, onClose }: WorkingMemory
       </section>
 
       <div className="actions">
-        <button type="button" className="btn btn--secondary" onClick={onClose}>
+        <a className="btn btn--secondary" href={returnPath}>
           Вернуться
-        </button>
+        </a>
         <button type="button" className="btn btn--ghost" onClick={reset} disabled={Object.keys(answers).length === 0}>
           Очистить рабочую базу данных
         </button>

@@ -1,88 +1,151 @@
-import { quiz, steps } from '../data.ts';
+import { useEffect, useRef } from 'react';
+import { estimatedMinutes, groupsTitle, useBase } from '../base.ts';
+import { copyOf } from '../editor/ops.ts';
+import { downloadBase } from '../files.ts';
 import { plural } from '../plural.ts';
+import { basePath, navigate } from '../router.ts';
+import { createBase } from '../storage.ts';
 import { Photo } from './Photo.tsx';
 
 interface StartScreenProps {
   /** Сколько вопросов уже отвечено в прошлый раз. */
   answered: number;
+  /** Все параметры получены, результат уже можно посмотреть. */
+  complete: boolean;
   onStart: () => void;
   onResume: () => void;
-  onOpenKnowledgeBase: () => void;
 }
 
-const HOW_IT_WORKS = [
-  `Ответь на ${steps.length} вопроса о мотивах, опыте и характере. В одних вопросах можно выбрать один ответ, в других — несколько. Если ответ на вопрос следует из предыдущих, система выведет его сама и не станет спрашивать.`,
-  `Каждый ответ даёт «преимущество» свойствам деятельности, и после каждого ответа система пересчитывает рейтинг ${quiz.objects.length} видов волонтёрской деятельности.`,
-  'В конце ты увидишь свою направленность, все виды деятельности по рангу и объяснение, почему лидеры тебе подходят.',
-];
-
-export function StartScreen({ answered, onStart, onResume, onOpenKnowledgeBase }: StartScreenProps) {
+export function StartScreen({ answered, complete, onStart, onResume }: StartScreenProps) {
+  const { id, base, steps, issues, canRun, builtIn } = useBase();
+  const titleRef = useRef<HTMLHeadingElement>(null);
   const hasProgress = answered > 0;
+  const hasGroups = base.groups.length > 0;
+  const errors = issues.filter((issue) => issue.severity === 'error').length;
+  const title = groupsTitle(base);
+
+  const howItWorks = [
+    `Всего ${plural(steps.length, ['вопрос', 'вопроса', 'вопросов'])}. В одних можно выбрать один ответ, в других — несколько. Если ответ следует из предыдущих, система выведет его сама и не станет спрашивать.`,
+    `Каждый ответ даёт «преимущество» свойствам объектов, и после каждого ответа система пересчитывает рейтинг из ${plural(base.objects.length, ['позиции', 'позиций', 'позиций'])}.`,
+    hasGroups
+      ? 'В конце будет итог, весь рейтинг и объяснение, почему лидеры подходят.'
+      : 'В конце будет весь рейтинг и объяснение, почему лидеры подходят.',
+  ];
+
+  useEffect(() => {
+    titleRef.current?.focus({ preventScroll: true });
+  }, []);
 
   return (
     <div className="start">
-      <section className="start__hero">
+      <section className={base.image?.url ? 'start__hero' : 'start__hero start__hero--solo'}>
         <div className="start__intro">
-          <p className="eyebrow">{quiz.subtitle}</p>
-          <h1 className="start__title">{quiz.title}</h1>
-          <p className="start__lead">{quiz.description}</p>
+          {base.subtitle && <p className="eyebrow">{base.subtitle}</p>}
+          <h1 ref={titleRef} tabIndex={-1} className="start__title">
+            {base.title || 'Без названия'}
+          </h1>
+          {base.description && <p className="start__lead">{base.description}</p>}
           <ul className="facts" aria-label="Коротко о тесте">
             <li>{plural(steps.length, ['вопрос', 'вопроса', 'вопросов'])}</li>
-            <li>≈ {plural(Math.max(1, Math.round(steps.length * 0.3)), ['минута', 'минуты', 'минут'])}</li>
-            <li>{plural(quiz.objects.length, ['вид деятельности', 'вида деятельности', 'видов деятельности'])}</li>
-            <li>{plural(quiz.groups.length, ['направление', 'направления', 'направлений'])}</li>
-          </ul>
-          <div className="actions">
-            {hasProgress ? (
-              <>
-                <button type="button" className="btn btn--primary" onClick={onResume}>
-                  Продолжить
-                </button>
-                <button type="button" className="btn btn--secondary" onClick={onStart}>
-                  Начать заново
-                </button>
-              </>
-            ) : (
-              <button type="button" className="btn btn--primary" onClick={onStart}>
-                Начать тест
-              </button>
+            <li>≈ {plural(estimatedMinutes(steps.length), ['минута', 'минуты', 'минут'])}</li>
+            <li>{plural(base.objects.length, ['позиция', 'позиции', 'позиций'])} в рейтинге</li>
+            {hasGroups && (
+              <li>
+                {title}: {base.groups.length}
+              </li>
             )}
-          </div>
-          {hasProgress && (
+          </ul>
+
+          {!canRun && (
+            <div className="alert" role="alert">
+              <p className="alert__title">Тест пока не запускается</p>
+              <p>
+                В базе {plural(errors, ['ошибка', 'ошибки', 'ошибок'])}.{' '}
+                <a href={basePath(id, 'checks')}>Посмотреть ошибки</a>
+                {!builtIn && (
+                  <>
+                    {' '}
+                    или <a href={basePath(id, 'edit')}>открыть редактор</a>
+                  </>
+                )}
+                .
+              </p>
+            </div>
+          )}
+
+          {canRun && (
+            <div className="actions">
+              {hasProgress ? (
+                <>
+                  <button type="button" className="btn btn--primary" onClick={onResume}>
+                    Продолжить
+                  </button>
+                  {complete && (
+                    <a className="btn btn--secondary" href={basePath(id, 'result')}>
+                      Посмотреть результат
+                    </a>
+                  )}
+                  <button type="button" className="btn btn--secondary" onClick={onStart}>
+                    Начать заново
+                  </button>
+                </>
+              ) : (
+                <button type="button" className="btn btn--primary" onClick={onStart}>
+                  Начать тест
+                </button>
+              )}
+            </div>
+          )}
+          {canRun && hasProgress && (
             <p className="start__progress">
-              Ты уже ответил(а) на {answered} из {plural(steps.length, ['вопроса', 'вопросов', 'вопросов'])}.
+              Уже есть ответы на {answered} из {plural(steps.length, ['вопроса', 'вопросов', 'вопросов'])}.
             </p>
           )}
         </div>
-        <Photo image={quiz.image} className="start__photo" eager />
+        <Photo image={base.image} className="start__photo" eager />
       </section>
 
-      <section className="section">
-        <h2 className="section__title">Направления</h2>
-        <ul className="direction-grid">
-          {quiz.groups.map((group) => (
-            <li key={group.id} className="direction-card">
-              <Photo image={group.image} className="direction-card__photo" />
-              <h3 className="direction-card__title">{group.title}</h3>
-              <p className="direction-card__text">{group.tagline}</p>
-            </li>
-          ))}
-        </ul>
-      </section>
+      {hasGroups && (
+        <section className="section">
+          <h2 className="section__title">{title}</h2>
+          <ul className="direction-grid">
+            {base.groups.map((group) => (
+              <li key={group.id} className="direction-card">
+                <Photo image={group.image} className="direction-card__photo" />
+                <h3 className="direction-card__title">{group.title}</h3>
+                {(group.tagline || group.description) && <p className="direction-card__text">{group.tagline || group.description}</p>}
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       <section className="section">
         <h2 className="section__title">Как это работает</h2>
         <ol className="how">
-          {HOW_IT_WORKS.map((text) => (
+          {howItWorks.map((text) => (
             <li key={text}>{text}</li>
           ))}
         </ol>
         <p className="note">
-          Это прототип экспертной системы: её база знаний открыта —{' '}
-          <button type="button" className="text-button text-button--inline" onClick={onOpenKnowledgeBase}>
-            посмотреть объекты, атрибуты и правила
+          База знаний этой системы открыта:{' '}
+          <a className="text-button text-button--inline" href={basePath(id, 'kb')}>
+            объекты, атрибуты и правила
+          </a>
+          .{' '}
+          <button type="button" className="text-button text-button--inline" onClick={() => downloadBase(base)}>
+            Скачать базу в JSON
           </button>
-          .
+          {' · '}
+          {builtIn ? (
+            <button type="button" className="text-button text-button--inline" onClick={() => navigate(basePath(createBase(copyOf(base)), 'edit'))}>
+              Сделать копию для редактирования
+            </button>
+          ) : (
+            <a className="text-button text-button--inline" href={basePath(id, 'edit')}>
+              Открыть в редакторе
+            </a>
+          )}
         </p>
       </section>
     </div>

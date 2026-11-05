@@ -1,116 +1,68 @@
-// Состояние приложения: какой экран открыт, на каком вопросе пользователь и что он ответил.
-// Ответы — это рабочая база данных экспертной системы; она хранится в localStorage,
-// чтобы после перезагрузки можно было продолжить.
+// Ход теста: на каком вопросе пользователь и что он ответил. Ответы — это рабочая база данных экспертной
+// системы; у каждой базы она своя и хранится в браузере, чтобы после перезагрузки можно было продолжить.
 
-import { useEffect, useReducer } from 'react';
-import { infer, isComplete, toggleOption } from './engine/scoring.ts';
+import { useEffect, useMemo, useReducer } from 'react';
+import type { CompiledBase } from './base.ts';
+import { infer, toggleOption } from './engine/scoring.ts';
 import type { Answers } from './engine/types.ts';
-import { quiz, steps } from './data.ts';
-
-export type MainScreen = 'start' | 'quiz' | 'result';
-/** Экраны поверх основного: авторы фото, база знаний, рабочая база данных. */
-export type OverlayScreen = 'credits' | 'kb' | 'wm';
-export type Screen = MainScreen | OverlayScreen;
+import { clearSession, loadSession, saveSession } from './storage.ts';
 
 export interface QuizState {
-  screen: Screen;
-  /** Куда вернуться с экрана поверх основного. */
-  returnTo: MainScreen;
   /** Индекс текущего вопроса среди всех вопросов базы знаний. */
   step: number;
   answers: Answers;
 }
 
 export type QuizAction =
-  | { type: 'start' }
-  | { type: 'resume' }
-  | { type: 'home' }
+  | { type: 'reset' }
   | { type: 'toggle'; optionId: string }
-  | { type: 'next' }
-  | { type: 'back' }
-  | { type: 'open'; screen: OverlayScreen }
-  | { type: 'close' }
-  | { type: 'reset' };
+  | { type: 'goto'; step: number };
 
-// На github.io все сайты аккаунта делят один origin, а значит и localStorage:
-// ключ не должен совпадать с ключом прототипа в репозитории mgtu-ois.
-const STORAGE_KEY = 'mgtu-ois-constructor/answers/v1';
-const INITIAL: QuizState = { screen: 'start', returnTo: 'start', step: 0, answers: {} };
+const INITIAL: QuizState = { step: 0, answers: {} };
 
 /** Ближайший вопрос в направлении direction, который задаётся пользователю (не выведен правилом). */
-function nearestAsked(from: number, direction: 1 | -1, answers: Answers): number | null {
-  const { inferred } = infer(quiz, answers);
+export function nearestAsked(compiled: CompiledBase, from: number, direction: 1 | -1, answers: Answers): number | null {
+  const { steps, base } = compiled;
+  const { inferred } = infer(base, answers);
   for (let i = from; i >= 0 && i < steps.length; i += direction) {
     if (!inferred.has(steps[i].question.id)) return i;
   }
   return null;
 }
 
-function reducer(state: QuizState, action: QuizAction): QuizState {
-  switch (action.type) {
-    case 'start':
-      return { ...INITIAL, screen: 'quiz' };
-    case 'resume':
-      return { ...state, screen: 'quiz', step: nearestAsked(state.step, 1, state.answers) ?? state.step };
-    case 'home':
-      return { ...state, screen: 'start' };
-    case 'toggle': {
-      const { question } = steps[state.step];
-      const selected = toggleOption(question, state.answers[question.id] ?? [], action.optionId);
-      return { ...state, answers: { ...state.answers, [question.id]: selected } };
-    }
-    case 'next': {
-      const next = nearestAsked(state.step + 1, 1, state.answers);
-      return next === null ? { ...state, screen: 'result' } : { ...state, step: next };
-    }
-    case 'back': {
-      const previous = nearestAsked(state.step - 1, -1, state.answers);
-      return previous === null ? { ...state, screen: 'start' } : { ...state, step: previous };
-    }
-    case 'open':
-      return state.screen === action.screen
-        ? state
-        : { ...state, screen: action.screen, returnTo: isMain(state.screen) ? state.screen : state.returnTo };
-    case 'close':
-      return { ...state, screen: state.returnTo };
-    case 'reset':
-      return { ...INITIAL, screen: state.screen, returnTo: 'start' };
-  }
+/** База могла измениться с прошлого раза, поэтому сохранённый номер вопроса приводим к допустимому. */
+function load(compiled: CompiledBase): QuizState {
+  const saved = loadSession(compiled.id);
+  if (!saved) return INITIAL;
+  const last = Math.max(0, compiled.steps.length - 1);
+  const step = Math.min(Math.max(0, saved.step), last);
+  return { step: nearestAsked(compiled, step, 1, saved.answers) ?? 0, answers: saved.answers };
 }
 
-function isMain(screen: Screen): screen is MainScreen {
-  return screen === 'start' || screen === 'quiz' || screen === 'result';
-}
-
-function load(): QuizState {
-  try {
-    const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? 'null');
-    if (saved && typeof saved.step === 'number' && saved.answers && typeof saved.answers === 'object') {
-      const answers: Answers = saved.answers;
-      const step = nearestAsked(Math.min(Math.max(0, saved.step), steps.length - 1), 1, answers) ?? 0;
-      // Если после обновления базы знаний старые ответы неполные, показывать результат по ним нельзя.
-      const screen: MainScreen =
-        saved.screen === 'quiz' || (saved.screen === 'result' && isComplete(quiz, answers)) ? saved.screen : 'start';
-      return { ...INITIAL, screen, step, answers };
-    }
-  } catch {
-    // Повреждённые данные или недоступное хранилище — просто начинаем сначала.
-  }
-  return INITIAL;
-}
-
-export function useQuizState() {
-  const [state, dispatch] = useReducer(reducer, undefined, load);
+export function useQuizState(compiled: CompiledBase) {
+  const reducer = useMemo(
+    () =>
+      (state: QuizState, action: QuizAction): QuizState => {
+        switch (action.type) {
+          case 'reset':
+            return INITIAL;
+          case 'toggle': {
+            const { question } = compiled.steps[state.step];
+            const selected = toggleOption(question, state.answers[question.id] ?? [], action.optionId);
+            return { ...state, answers: { ...state.answers, [question.id]: selected } };
+          }
+          case 'goto':
+            return { ...state, step: action.step };
+        }
+      },
+    [compiled],
+  );
+  const [state, dispatch] = useReducer(reducer, compiled, load);
 
   useEffect(() => {
-    const { step, answers } = state;
-    const screen = isMain(state.screen) ? state.screen : state.returnTo;
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify({ screen, step, answers }));
-    } catch {
-      // В приватном режиме хранилище бывает недоступно — тест работает и без сохранения.
-    }
-  }, [state]);
+    if (state.step === 0 && Object.keys(state.answers).length === 0) clearSession(compiled.id);
+    else saveSession(compiled.id, state);
+  }, [state, compiled.id]);
 
   return [state, dispatch] as const;
 }

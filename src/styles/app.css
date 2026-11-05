@@ -138,6 +138,7 @@ a {
 }
 
 .text-button {
+  display: inline;
   padding: 0;
   border: 0;
   background: none;
@@ -314,6 +315,52 @@ a {
   }
 }
 
+/* Шапка выбранной базы: «Все базы / название». На телефоне от первой части остаётся значок. */
+.topbar__left {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: var(--space-xs);
+  min-width: 0;
+}
+
+.topbar__left .brand {
+  flex: none;
+}
+
+.brand__name--wide {
+  display: none;
+  color: var(--color-muted);
+  font-size: 14px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.topbar__sep {
+  display: none;
+  color: var(--color-border-strong);
+}
+
+.topbar__base {
+  overflow: hidden;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.25;
+  text-decoration: none;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (min-width: 1128px) {
+  .brand__name--wide {
+    display: inline;
+  }
+
+  .topbar__sep {
+    display: inline;
+  }
+}
+
 .topnav {
   position: relative;
   flex: none;
@@ -363,6 +410,7 @@ a {
   font-size: 15px;
   font-weight: 500;
   text-align: left;
+  text-decoration: none;
   cursor: pointer;
 }
 
@@ -420,20 +468,11 @@ a {
   line-height: 1.4;
 }
 
-.footer__info {
-  display: grid;
-  gap: 2px;
-}
-
 .footer__link {
-  padding: 0;
-  border: 0;
-  background: none;
   color: var(--color-ink);
   font-size: 13px;
   text-decoration: underline;
   text-underline-offset: 3px;
-  cursor: pointer;
 }
 
 /* ---------- Стартовый экран ---------- */
@@ -476,6 +515,10 @@ a {
 
 .start__photo {
   aspect-ratio: 3 / 2;
+}
+
+.start__intro .alert a {
+  color: inherit;
 }
 
 .start__progress {
@@ -540,7 +583,7 @@ a {
 }
 
 @media (min-width: 744px) {
-  .start__hero {
+  .start__hero:not(.start__hero--solo) {
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
     gap: var(--space-xxl);
   }
@@ -551,7 +594,7 @@ a {
   }
 
   .direction-grid {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   }
 
   .how {
@@ -1232,6 +1275,11 @@ a {
   border-top: 1px solid var(--color-hairline);
 }
 
+.details--first {
+  margin-top: 0;
+  border-top: 0;
+}
+
 .details__summary {
   display: flex;
   align-items: center;
@@ -1333,7 +1381,7 @@ a {
 }
 
 @media (min-width: 960px) {
-  .result__hero {
+  .result__hero:not(.result__hero--solo) {
     grid-template-columns: minmax(0, 6fr) minmax(0, 5fr);
     gap: var(--space-xxl);
     align-items: center;

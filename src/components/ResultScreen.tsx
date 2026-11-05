@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useRef } from 'react';
+import { groupsTitle, percent, preferencePercent, useBase } from '../base.ts';
 import { attributeLabel, breakdown } from '../engine/scoring.ts';
 import type { Evaluation, ObjectScore } from '../engine/scoring.ts';
 import type { Answers } from '../engine/types.ts';
-import { attributeById, attributeRuleOf, groupById, percent, preferencePercent, quiz } from '../data.ts';
+import { basePath } from '../router.ts';
 import { Photo } from './Photo.tsx';
 import { RankingList } from './RankingList.tsx';
 
@@ -10,15 +11,17 @@ interface ResultScreenProps {
   evaluation: Evaluation;
   answers: Answers;
   onRestart: () => void;
-  onOpenWorkingMemory: () => void;
 }
 
-export function ResultScreen({ evaluation, answers, onRestart, onOpenWorkingMemory }: ResultScreenProps) {
-  const { objects } = evaluation;
-  const { winner, runnerUp, ranking, isClose, isWeak, reasons } = evaluation.verdict!;
-  const { group } = winner;
+export function ResultScreen({ evaluation, answers, onRestart }: ResultScreenProps) {
+  const compiled = useBase();
+  const { id, base, attributeById, attributeRuleOf } = compiled;
+  const { verdict, objects } = evaluation;
   const titleRef = useRef<HTMLHeadingElement>(null);
-  const rows = useMemo(() => breakdown(quiz, answers), [answers]);
+  const rows = useMemo(() => breakdown(base, answers), [base, answers]);
+  const winnerGroup = verdict?.winner.group;
+  const leader = objects[0];
+  const heroImage = winnerGroup ? winnerGroup.image : base.image;
 
   useEffect(() => {
     titleRef.current?.focus({ preventScroll: true });
@@ -26,47 +29,46 @@ export function ResultScreen({ evaluation, answers, onRestart, onOpenWorkingMemo
 
   return (
     <article className="result">
-      <header className="result__hero">
+      <header className={heroImage?.url ? 'result__hero' : 'result__hero result__hero--solo'}>
         <div className="result__intro">
-          <p className="eyebrow">Твоя направленность</p>
+          <p className="eyebrow">{base.settings.resultTitle || (verdict ? 'Результат' : 'Лучше всего подходит')}</p>
           <h1 ref={titleRef} tabIndex={-1} className="result__title">
-            {group.title}
+            {winnerGroup ? winnerGroup.title : leader.object.title}
           </h1>
-          <p className="result__tagline">{group.tagline}</p>
+          {winnerGroup ? (
+            winnerGroup.tagline && <p className="result__tagline">{winnerGroup.tagline}</p>
+          ) : (
+            leader.object.description && <p className="result__tagline">{leader.object.description}</p>
+          )}
 
           <div className="score">
             <p className="score__value">
-              {Math.round(winner.percent)}
+              {Math.round(verdict ? verdict.winner.percent : leader.score * 100)}
               <span className="score__unit">%</span>
             </p>
             <p className="score__caption">
-              совпадение со сферой — {winner.points} из {winner.max} возможных баллов
+              {verdict ? `совпадение — ${verdict.winner.points} из ${verdict.winner.max} возможных баллов` : 'совпадение с профилем предпочтений'}
             </p>
           </div>
 
-          {isWeak && (
+          {verdict?.isWeak && (
             <p className="callout">
-              Склонность пока выражена слабо: даже самая близкая сфера набрала меньше половины баллов. Попробуй разные
-              направления на разовых акциях — так станет понятнее, что откликается именно тебе.
+              Результат пока выражен слабо: даже лучшая группа набрала меньше {base.settings.weakPercent} % баллов.
             </p>
           )}
-          {isClose && runnerUp && (
+          {verdict?.isClose && verdict.runnerUp && (
             <p className="callout">
-              Почти так же тебе подходит направление «{runnerUp.group.title}» — {Math.round(runnerUp.percent)} %.
-              Можно попробовать оба и выбрать по ощущениям.
+              Почти так же подходит «{verdict.runnerUp.group.title}» — {Math.round(verdict.runnerUp.percent)} %.
             </p>
           )}
         </div>
-        <Photo image={group.image} className="result__photo" eager />
+        <Photo image={heroImage} className="result__photo" eager />
       </header>
 
       <section className="section">
-        <h2 className="section__title">Лучше всего тебе подходят</h2>
-        {objects[0].score < 0.5 && (
-          <p className="section__lead">
-            По твоим ответам ни один вид деятельности не набрал и 50 % совпадения — это лучшие из имеющихся. Попробуй
-            их на разовых акциях, чтобы понять, что откликается.
-          </p>
+        <h2 className="section__title">Лучше всего подходят</h2>
+        {leader.score < 0.5 && (
+          <p className="section__lead">Ни одна позиция рейтинга не набрала и 50 % совпадения: это лучшие из имеющихся.</p>
         )}
         <ol className="top-cards">
           {objects.slice(0, 3).map((item) => (
@@ -77,11 +79,11 @@ export function ResultScreen({ evaluation, answers, onRestart, onOpenWorkingMemo
 
       <div className="result__body">
         <div className="result__main">
-          {reasons.length > 0 && (
+          {verdict && verdict.reasons.length > 0 && (
             <section className="section">
-              <h2 className="section__title">Почему у тебя такая направленность</h2>
+              <h2 className="section__title">Почему такой результат</h2>
               <ul className="reasons">
-                {reasons.map((reason) => (
+                {verdict.reasons.map((reason) => (
                   <li key={`${reason.questionId}:${reason.text}`}>{reason.text}</li>
                 ))}
               </ul>
@@ -89,73 +91,83 @@ export function ResultScreen({ evaluation, answers, onRestart, onOpenWorkingMemo
           )}
 
           <section className="section">
-            <h2 className="section__title">Все виды деятельности по рангу</h2>
+            <h2 className="section__title">Весь рейтинг</h2>
             <p className="section__lead">
-              Совпадение — это сходство твоего профиля предпочтений с профилем деятельности: 100 % — деятельность
-              ровно такая, как ты хочешь, 50 % — никак не связана с твоими ответами, ниже 50 % — скорее им противоречит.
+              Совпадение — это сходство профиля предпочтений с профилем объекта: 100 % — объект в точности соответствует ответам,
+              50 % — никак с ними не связан, ниже 50 % — скорее им противоречит.
             </p>
             <RankingList items={objects} />
           </section>
 
-          <section className="section">
-            <h2 className="section__title">О направлении</h2>
-            <p className="result__text">{group.description}</p>
-            <h3 className="result__subtitle">Что пригодится</h3>
-            <ul className="chips">
-              {group.qualities?.map((quality) => (
-                <li key={quality}>{quality}</li>
-              ))}
-            </ul>
-          </section>
+          {winnerGroup?.description && (
+            <section className="section">
+              <h2 className="section__title">{winnerGroup.title}</h2>
+              <p className="result__text">{winnerGroup.description}</p>
+              {winnerGroup.qualities && winnerGroup.qualities.length > 0 && (
+                <>
+                  <h3 className="result__subtitle">Что пригодится</h3>
+                  <ul className="chips">
+                    {winnerGroup.qualities.map((quality) => (
+                      <li key={quality}>{quality}</li>
+                    ))}
+                  </ul>
+                </>
+              )}
+            </section>
+          )}
 
-          <section className="section">
-            <h2 className="section__title">С чего начать</h2>
-            <ol className="steps">
-              {group.firstSteps?.map((text) => (
-                <li key={text}>{text}</li>
-              ))}
-            </ol>
-          </section>
+          {winnerGroup?.firstSteps && winnerGroup.firstSteps.length > 0 && (
+            <section className="section">
+              <h2 className="section__title">С чего начать</h2>
+              <ol className="steps">
+                {winnerGroup.firstSteps.map((text) => (
+                  <li key={text}>{text}</li>
+                ))}
+              </ol>
+            </section>
+          )}
         </div>
 
         <aside className="result__aside">
           <section className="section panel">
-            <h2 className="section__title">Все направления</h2>
-            <ul className="bars">
-              {ranking.map((score) => (
-                <li key={score.group.id} className={score === winner ? 'bar bar--winner' : 'bar'}>
-                  <span className="bar__label">{score.group.title}</span>
-                  <span className="bar__track" aria-hidden="true">
-                    <span className="bar__fill" style={{ width: `${score.percent}%` }} />
-                  </span>
-                  <span className="bar__value">{Math.round(score.percent)} %</span>
-                </li>
-              ))}
-            </ul>
+            {verdict && (
+              <>
+                <h2 className="section__title">{groupsTitle(base)}</h2>
+                <ul className="bars">
+                  {verdict.ranking.map((score) => (
+                    <li key={score.group.id} className={score === verdict.winner ? 'bar bar--winner' : 'bar'}>
+                      <span className="bar__label">{score.group.title}</span>
+                      <span className="bar__track" aria-hidden="true">
+                        <span className="bar__fill" style={{ width: `${Math.max(0, score.percent)}%` }} />
+                      </span>
+                      <span className="bar__value">{Math.round(score.percent)} %</span>
+                    </li>
+                  ))}
+                </ul>
+              </>
+            )}
 
-            <details className="details">
+            <details className={verdict ? 'details' : 'details details--first'}>
               <summary className="details__summary">Как считается результат</summary>
               <div className="details__text">
                 <p>
-                  Каждый ответ срабатывает как правило «параметр + атрибут» и даёт «преимущество» атрибутам: сферам
-                  (дети, инклюзия, старшие, экология) и стилю деятельности (нагрузка, регулярность, лидерство и другие). Из
-                  сумм получается профиль предпочтений: по
-                  каждому из {quiz.attributes.length} атрибутов — где сумма лежит между наименьшей и наибольшей возможной,
-                  от 0 до 100 %.
+                  Каждый ответ срабатывает как правило «параметр + атрибут» и даёт «преимущество» атрибутам. Из сумм получается
+                  профиль предпочтений: по каждому из {base.attributes.length} атрибутов — где сумма лежит между наименьшей и
+                  наибольшей возможной, от 0 до 100 %.
                 </p>
                 <p>
-                  Профиль сравнивается с атрибутами каждого из {quiz.objects.length} видов деятельности (косинусная мера
-                  сходства с учётом важности атрибутов) и переводится в совпадение от 0 до 100 %: 50 % — деятельность
-                  не связана с ответами. Так получается рейтинг. Направленность — это сфера, по которой набрано больше
-                  всего баллов из {winner.max} возможных.
+                  Профиль сравнивается с атрибутами каждого из {base.objects.length} объектов (косинусная мера сходства с учётом
+                  важности атрибутов) и переводится в совпадение от 0 до 100 %: 50 % — объект не связан с ответами. Так получается
+                  рейтинг.
+                  {verdict && ` Итог — это группа, атрибут которой набрал самую большую долю от возможных баллов.`}
                 </p>
               </div>
-              <button type="button" className="text-button" onClick={onOpenWorkingMemory}>
+              <a className="text-button" href={basePath(id, 'wm')}>
                 Открыть рабочую базу данных
-              </button>
+              </a>
               <ol className="breakdown">
                 {rows.map(({ question, selected, points, rule }, i) => {
-                  const gained = quiz.attributes.map((a) => a.id).filter((id) => points[id] !== 0);
+                  const gained = base.attributes.filter((attribute) => points[attribute.id] !== 0);
                   const fired = selected.flatMap((option) => attributeRuleOf(question.id, option.id)?.title ?? []);
                   return (
                     <li key={question.id} className="breakdown__item">
@@ -172,13 +184,19 @@ export function ResultScreen({ evaluation, answers, onRestart, onOpenWorkingMemo
                       <p className="breakdown__answer">{selected.map((option) => option.text).join('; ')}</p>
                       <p className="breakdown__points">
                         {gained.length > 0
-                          ? gained.map((id) => (
+                          ? gained.map((attribute) => (
                               <span
-                                key={id}
-                                className={id === group.attribute ? 'point point--winner' : points[id] < 0 ? 'point point--minus' : 'point'}
+                                key={attribute.id}
+                                className={
+                                  attribute.id === winnerGroup?.attribute
+                                    ? 'point point--winner'
+                                    : points[attribute.id] < 0
+                                      ? 'point point--minus'
+                                      : 'point'
+                                }
                               >
-                                {attributeLabel(attributeById[id])} {points[id] > 0 ? '+' : '−'}
-                                {Math.abs(points[id])}
+                                {attributeLabel(attributeById[attribute.id])} {points[attribute.id] > 0 ? '+' : '−'}
+                                {Math.abs(points[attribute.id])}
                               </span>
                             ))
                           : 'Баллов не даёт'}
@@ -203,6 +221,8 @@ export function ResultScreen({ evaluation, answers, onRestart, onOpenWorkingMemo
 
 /** Карточка лидера рейтинга: что совпадает с профилем и что нет. */
 function TopCard({ item }: { item: ObjectScore }) {
+  const { attributeById, groupById } = useBase();
+  const group = item.object.group ? groupById[item.object.group] : undefined;
   const matches = item.contributions.filter((c) => c.value > 0).slice(0, 3);
   const conflicts = item.contributions
     .filter((c) => c.value < 0)
@@ -215,8 +235,8 @@ function TopCard({ item }: { item: ObjectScore }) {
         <span className="top-card__score">{percent(item.score)}</span>
       </div>
       <h3 className="top-card__title">{item.object.title}</h3>
-      {item.object.group && <p className="top-card__direction">{groupById[item.object.group]?.title}</p>}
-      <p className="top-card__text">{item.object.description}</p>
+      {group && <p className="top-card__direction">{group.title}</p>}
+      {item.object.description && <p className="top-card__text">{item.object.description}</p>}
       {matches.length > 0 && (
         <p className="top-card__line">
           <span className="top-card__label">Совпадает:</span>
