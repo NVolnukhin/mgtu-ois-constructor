@@ -91,6 +91,8 @@ export function KnowledgeBaseScreen({ returnPath }: KnowledgeBaseScreenProps) {
 
 function ObjectsTab() {
   const { base, groupById } = useBase();
+  const hasAttributes = base.attributes.length > 0;
+  const headRows = hasAttributes ? 2 : 1;
   return (
     <>
       <p className="tabpanel__lead">
@@ -99,18 +101,32 @@ function ObjectsTab() {
       </p>
       <div className="table-scroll">
         <table className="kb-table">
+          {/* Над столбцами атрибутов общая подпись «Атрибуты»: сразу видно, что числа — их выраженность у объекта. */}
+          <colgroup span={2} />
+          {hasAttributes && <colgroup span={base.attributes.length} />}
           <thead>
             <tr>
-              <th scope="col">№</th>
-              <th scope="col" className="kb-table__name">
+              <th scope="col" rowSpan={headRows}>
+                №
+              </th>
+              <th scope="col" rowSpan={headRows} className="kb-table__name">
                 Объект
               </th>
-              {base.attributes.map((attribute) => (
-                <th key={attribute.id} scope="col" className="kb-table__attr" title={attribute.title}>
-                  {attributeLabel(attribute)}
+              {hasAttributes && (
+                <th scope="colgroup" colSpan={base.attributes.length} className="kb-table__group">
+                  Атрибуты
                 </th>
-              ))}
+              )}
             </tr>
+            {hasAttributes && (
+              <tr>
+                {base.attributes.map((attribute) => (
+                  <th key={attribute.id} scope="col" className="kb-table__attr" title={attribute.title}>
+                    {attributeLabel(attribute)}
+                  </th>
+                ))}
+              </tr>
+            )}
           </thead>
           <tbody>
             {base.objects.map((object, i) => (

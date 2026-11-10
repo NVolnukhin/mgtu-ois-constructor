@@ -393,6 +393,26 @@ a {
   }
 }
 
+/* Ссылка на инструкцию в шапке главной и самой инструкции. */
+.topbar__link {
+  flex: none;
+  padding: var(--space-sm) var(--space-md);
+  border-radius: var(--radius-full);
+  font-size: 15px;
+  font-weight: 500;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.topbar__link:hover {
+  background: var(--color-surface-soft);
+}
+
+.topbar__link--active {
+  background: var(--color-surface-strong);
+  font-weight: 600;
+}
+
 .topnav {
   position: relative;
   flex: none;
@@ -1705,6 +1725,16 @@ a {
 
 .kb-table__attr {
   text-align: center !important;
+}
+
+/* Общая подпись «Атрибуты» над их столбцами. Она стоит слева, над первым атрибутом: широкая таблица прокручивается,
+   и подпись посередине могла бы оказаться за краем. Заголовки на две строки прижаты к низу, к названиям атрибутов. */
+.kb-table thead .kb-table__group {
+  border-bottom-color: var(--color-hairline);
+}
+
+.kb-table thead th[rowspan='2'] {
+  vertical-align: bottom;
 }
 
 .kb-table--wide {
@@ -3222,14 +3252,102 @@ html:has(.confirm[open]) {
   }
 }
 
+/* ---------- Инструкция ---------- */
+
+.help-toc {
+  margin-top: var(--space-lg);
+}
+
+.help-toc ol {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-sm);
+  list-style: none;
+}
+
+.help-toc a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 40px;
+  padding: 0 var(--space-base);
+  border-radius: var(--radius-full);
+  background: var(--color-surface-strong);
+  font-size: 14px;
+  font-weight: 500;
+  text-decoration: none;
+}
+
+.help-toc a:hover {
+  background: var(--color-hairline-soft);
+}
+
+/* Под закреплённой шапкой раздел не прячется благодаря scroll-padding у html, здесь только небольшой зазор над заголовком. */
+.help__title {
+  scroll-margin-top: var(--space-base);
+}
+
+.help__section > * + * {
+  margin-top: var(--space-base);
+}
+
+.help__section > p {
+  color: var(--color-body);
+}
+
+.help__section > .help__subtitle {
+  margin-top: var(--space-xl);
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.help__section > .help__title + .help__subtitle {
+  margin-top: var(--space-base);
+}
+
+.help__section > .note {
+  color: var(--color-muted);
+}
+
+/* В таблице-примере три атрибута: на телефоне она помещается целиком, если не держать широкую колонку названий. */
+.help-table .kb-table__name {
+  min-width: 0;
+}
+
+@media (max-width: 743px) {
+  .help-table .kb-table th,
+  .help-table .kb-table td {
+    padding-inline: 6px;
+  }
+}
+
+.help-terms {
+  display: grid;
+  gap: var(--space-base);
+  margin-bottom: 0;
+}
+
+.help-terms dt {
+  font-weight: 600;
+}
+
+.help-terms dd {
+  margin: var(--space-xxs) 0 0;
+  color: var(--color-body);
+}
+
 /* ---------- Цели для пальца: на телефоне и других сенсорных экранах не меньше 44 пикселей ---------- */
 
 @media (max-width: 743px), (pointer: coarse) {
   .btn--small,
   .tab,
   .editor__link,
-  .editor-question__toggle {
+  .editor-question__toggle,
+  .help-toc a {
     min-height: 44px;
+  }
+
+  .topbar__link {
+    padding-block: 12px;
   }
 
   .topnav__menu {
@@ -3252,6 +3370,8 @@ html:has(.confirm[open]) {
   .text-button--inline,
   .note a,
   .page__lead a,
+  .section__lead a,
+  .editor-note a,
   .editor__status a,
   .alert a,
   .banner a {

@@ -9,7 +9,7 @@ import { checkRequirements, runTestProfiles } from '../engine/validate.ts';
 import type { ProfileResult } from '../engine/validate.ts';
 import { refocus } from '../focus.ts';
 import { plural, pluralWord } from '../plural.ts';
-import { basePath } from '../router.ts';
+import { basePath, helpPath } from '../router.ts';
 import { updateBase } from '../storage.ts';
 import { useConfirm } from './ConfirmDialog.tsx';
 
@@ -114,7 +114,8 @@ export function ChecksScreen() {
           {results.length > 0 ? `Проходят ${passed} из ${results.length}. ` : ''}
           Профиль — выдуманный человек: его ответы и то, что система должна ему показать. Если после правки базы профиль перестал проходить, значит, правила
           разошлись со смыслом ответов.{' '}
-          {!builtIn && 'Профиль можно собрать вручную или сохранить с экрана результата, пройдя тест.'}
+          {!builtIn && 'Профиль можно собрать вручную или сохранить с экрана результата, пройдя тест. '}
+          <a href={helpPath('profiles')}>Подробнее о профилях — в инструкции</a>.
         </p>
         {results.length > 0 && (
           <ol className="profile-list">

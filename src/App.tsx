@@ -1,30 +1,45 @@
 import { useEffect, useMemo } from 'react';
+import type { ReactNode } from 'react';
 import { BaseContext, compileBase, testPath } from './base.ts';
 import { BaseLayout } from './components/BaseLayout.tsx';
 import { ChecksScreen } from './components/ChecksScreen.tsx';
 import { ErrorBoundary } from './components/ErrorBoundary.tsx';
+import { HelpScreen } from './components/HelpScreen.tsx';
 import { HomeScreen } from './components/HomeScreen.tsx';
 import { SaveToast } from './components/SaveToast.tsx';
 import { SessionScreens } from './components/SessionScreens.tsx';
 import { EditorScreen } from './editor/EditorScreen.tsx';
-import { HOME_PATH, useRoute } from './router.ts';
+import { HELP_PATH, HOME_PATH, useRoute } from './router.ts';
 import type { BaseSection } from './router.ts';
 import { StorageBanner } from './components/StorageBanner.tsx';
 import { exampleRecord, EXAMPLE_ID, loadSession, useStore } from './storage.ts';
 
 export function App() {
   const route = useRoute();
-  const place = route.name === 'home' ? 'home' : `${route.id}/${route.section}/${route.tab ?? ''}`;
+  const place =
+    route.name === 'base' ? `${route.id}/${route.section}/${route.tab ?? ''}` : route.name === 'help' ? `help/${route.topic ?? ''}` : 'home';
+  // К разделу инструкции страницу прокручивает сама инструкция.
+  const toTop = !(route.name === 'help' && route.topic);
 
   // Сменился экран — прокручиваем страницу наверх.
   useEffect(() => {
-    window.scrollTo({ top: 0 });
-  }, [place]);
+    if (toTop) window.scrollTo({ top: 0 });
+  }, [place, toTop]);
 
   return (
     <>
       <ErrorBoundary resetKey={place}>
-        {route.name === 'home' ? <HomeLayout /> : <BaseRoute id={route.id} section={route.section} tab={route.tab} />}
+        {route.name === 'home' && (
+          <SiteLayout title="Конструктор экспертных систем" wide>
+            <HomeScreen />
+          </SiteLayout>
+        )}
+        {route.name === 'help' && (
+          <SiteLayout title="Инструкция — Конструктор экспертных систем" current="help">
+            <HelpScreen topic={route.topic} />
+          </SiteLayout>
+        )}
+        {route.name === 'base' && <BaseRoute id={route.id} section={route.section} tab={route.tab} />}
       </ErrorBoundary>
       <SaveToast />
     </>
@@ -40,20 +55,35 @@ function Brand({ title }: { title: string }) {
   );
 }
 
-function HomeLayout() {
+interface SiteLayoutProps {
+  title: string;
+  /** Экран шире обычного. */
+  wide?: boolean;
+  /** Открыта инструкция: ссылка на неё в шапке отмечена как текущая. */
+  current?: 'help';
+  children: ReactNode;
+}
+
+/** Каркас главной и инструкции: шапка со ссылкой на инструкцию и подвал. */
+function SiteLayout({ title, wide = false, current, children }: SiteLayoutProps) {
   useEffect(() => {
-    document.title = 'Конструктор экспертных систем';
-  }, []);
+    document.title = title;
+  }, [title]);
 
   return (
     <div className="app">
       <header className="topbar">
         <Brand title="Конструктор экспертных систем" />
+        <a
+          className={current === 'help' ? 'topbar__link topbar__link--active' : 'topbar__link'}
+          aria-current={current === 'help' ? 'page' : undefined}
+          href={HELP_PATH}
+        >
+          Инструкция
+        </a>
       </header>
       <StorageBanner />
-      <main className="main main--wide">
-        <HomeScreen />
-      </main>
+      <main className={wide ? 'main main--wide' : 'main'}>{children}</main>
       <footer className="footer">
         <p>Автор конструктора: Волнухин Никита</p>
       </footer>

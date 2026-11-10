@@ -6,6 +6,7 @@ import { minAskedQuestions } from '../engine/validate.ts';
 import { MAX_TEXT_LENGTH } from '../engine/parse.ts';
 import { refocus } from '../focus.ts';
 import { plural } from '../plural.ts';
+import { helpPath } from '../router.ts';
 import type { UpdateBase } from './EditorScreen.tsx';
 import { IssueList, RowActions, SectionHead, TextField } from './fields.tsx';
 import { addCondition, addRule, moveItem, nextCondition } from './ops.ts';
@@ -31,7 +32,8 @@ export function RulesSection({ update }: { update: UpdateBase }) {
       </SectionHead>
       <p className="editor-note">
         При {plural(steps.length, ['вопросе', 'вопросах', 'вопросах'])} задаётся не меньше {minAskedQuestions(base)}. Правила «параметр + атрибут» (их{' '}
-        {attributeRules.length}) — это варианты ответа и их веса, они задаются в разделе «Вопросы».
+        {attributeRules.length}) — это варианты ответа и их веса, они задаются в разделе «Вопросы».{' '}
+        <a href={helpPath('rules')}>Как работают правила — в инструкции</a>.
       </p>
 
       <ol className="editor-list">

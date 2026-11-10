@@ -12,6 +12,8 @@ import { addObject, moveItem, profilesExpectingObject, profilesPhrase, removeObj
 export function ObjectsSection({ update }: { update: UpdateBase }) {
   const { base, issues } = useBase();
   const { attributes, groups, objects, testProfiles } = base;
+  const hasAttributes = attributes.length > 0;
+  const headRows = hasAttributes ? 2 : 1;
 
   return (
     <section>
@@ -24,21 +26,38 @@ export function ObjectsSection({ update }: { update: UpdateBase }) {
       {objects.length > 0 && (
         <div className="table-scroll">
           <table className="kb-table matrix">
+            {/* Над столбцами атрибутов общая подпись «Атрибуты», как в базе знаний. */}
+            <colgroup span={groups.length > 0 ? 2 : 1} />
+            {hasAttributes && <colgroup span={attributes.length} />}
+            <colgroup span={1} />
             <thead>
               <tr>
-                <th scope="col" className="matrix__sticky">
+                <th scope="col" rowSpan={headRows} className="matrix__sticky">
                   Объект и описание
                 </th>
-                {groups.length > 0 && <th scope="col">Группа</th>}
-                {attributes.map((attribute) => (
-                  <th key={attribute.id} scope="col" className="kb-table__attr" title={attribute.title}>
-                    {attributeLabel(attribute) || '—'}
+                {groups.length > 0 && (
+                  <th scope="col" rowSpan={headRows}>
+                    Группа
                   </th>
-                ))}
-                <th scope="col">
+                )}
+                {hasAttributes && (
+                  <th scope="colgroup" colSpan={attributes.length} className="kb-table__group">
+                    Атрибуты
+                  </th>
+                )}
+                <th scope="col" rowSpan={headRows}>
                   <span className="visually-hidden">Действия</span>
                 </th>
               </tr>
+              {hasAttributes && (
+                <tr>
+                  {attributes.map((attribute) => (
+                    <th key={attribute.id} scope="col" className="kb-table__attr" title={attribute.title}>
+                      {attributeLabel(attribute) || '—'}
+                    </th>
+                  ))}
+                </tr>
+              )}
             </thead>
             <tbody>
               {objects.map((object, index) => (

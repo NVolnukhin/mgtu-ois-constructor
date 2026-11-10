@@ -4,7 +4,7 @@ import type { IssueSection } from '../engine/validate.ts';
 import type { KnowledgeBase } from '../engine/types.ts';
 import { downloadBase } from '../files.ts';
 import { plural } from '../plural.ts';
-import { basePath, navigate } from '../router.ts';
+import { basePath, helpPath, navigate } from '../router.ts';
 import { createBase, updateBase, useStore } from '../storage.ts';
 import { AttributesSection } from './AttributesSection.tsx';
 import { GeneralSection } from './GeneralSection.tsx';
@@ -107,6 +107,9 @@ export function EditorScreen({ tab }: { tab?: string }) {
           </p>
         </div>
         <div className="editor__actions">
+          <a className="btn btn--ghost btn--small" href={helpPath()}>
+            Инструкция
+          </a>
           <button type="button" className="btn btn--secondary btn--small" onClick={() => downloadBase(base)}>
             Скачать JSON
           </button>

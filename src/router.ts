@@ -5,8 +5,13 @@ import { useMemo, useSyncExternalStore } from 'react';
 
 export type BaseSection = 'start' | 'test' | 'result' | 'kb' | 'wm' | 'credits' | 'checks' | 'edit';
 
+/** Разделы инструкции: на них ведут ссылки с экранов, где нужна подсказка. */
+export type HelpTopic = 'parts' | 'rules' | 'result' | 'create' | 'profiles' | 'json' | 'storage';
+
 export type Route =
   | { name: 'home' }
+  /** topic — раздел инструкции, к которому прокрутить страницу. Из адреса может прийти любая строка. */
+  | { name: 'help'; topic?: string }
   /** tab — раздел внутри экрана: например, раздел редактора. */
   | { name: 'base'; id: string; section: BaseSection; tab?: string };
 
@@ -14,6 +19,7 @@ const SECTIONS: BaseSection[] = ['test', 'result', 'kb', 'wm', 'credits', 'check
 
 function parseRoute(hash: string): Route {
   const [root, encodedId, section, tab] = hash.replace(/^#\/?/, '').split('/');
+  if (root === 'help') return { name: 'help', topic: encodedId || undefined };
   if (root !== 'base' || !encodedId) return { name: 'home' };
   let id: string;
   try {
@@ -27,6 +33,12 @@ function parseRoute(hash: string): Route {
 }
 
 export const HOME_PATH = '#/';
+
+export const HELP_PATH = '#/help';
+
+export function helpPath(topic?: HelpTopic): string {
+  return topic ? `${HELP_PATH}/${topic}` : HELP_PATH;
+}
 
 export function basePath(id: string, section: BaseSection = 'start', tab?: string): string {
   const root = `#/base/${encodeURIComponent(id)}`;
