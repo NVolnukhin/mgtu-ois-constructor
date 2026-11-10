@@ -56,9 +56,6 @@ function HomeLayout() {
       </main>
       <footer className="footer">
         <p>Автор конструктора: Волнухин Никита</p>
-        <a className="footer__link" href="https://github.com/NVolnukhin/mgtu-ois-constructor" target="_blank" rel="noreferrer">
-          Исходный код
-        </a>
       </footer>
     </div>
   );
